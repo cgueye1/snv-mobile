@@ -13,7 +13,7 @@ workflows:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.wakana.1.61803398875
-       # provisioning_profile: quickforms_appstore_deeplink_2026
+        # provisioning_profile: quickforms_appstore_deeplink_2026
         certificate: snv_distribution_cert
       vars:
         GOOGLE_SERVICE_INFO_PLIST: $GOOGLE_SERVICE_INFO_PLIST
