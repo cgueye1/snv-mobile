@@ -1,0 +1,170 @@
+{
+  "project_info": {
+    "project_number": "337761766016",
+    "project_id": "wakana-c6f61",
+    "storage_bucket": "wakana-c6f61.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:337761766016:android:bf01b3285ab404fb947465",
+        "android_client_info": {
+          "package_name": "com.example.ligueye"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "337761766016-i7o0ht0t2l86cjcd88dosb099nod4ir6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.ligueye",
+            "certificate_hash": "654efdf7be0469ceeef742e3cc4c8ee2927952e4"
+          }
+        },
+        {
+          "client_id": "337761766016-so6lgojoohnvvvnomj34qa3mh4ela5lp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAaoWB8nuenKe-tr88dUphV9oOfEWrcTlQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "337761766016-so6lgojoohnvvvnomj34qa3mh4ela5lp.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "337761766016-gjherde05n1m27urrbtcsc9dtiel0i7v.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.wakana.seanema.seanema"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:337761766016:android:a4206d58afc958d0947465",
+        "android_client_info": {
+          "package_name": "com.example.news"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "337761766016-so6lgojoohnvvvnomj34qa3mh4ela5lp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAaoWB8nuenKe-tr88dUphV9oOfEWrcTlQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "337761766016-so6lgojoohnvvvnomj34qa3mh4ela5lp.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "337761766016-gjherde05n1m27urrbtcsc9dtiel0i7v.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.wakana.seanema.seanema"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:337761766016:android:d6890cf652ca58e2947465",
+        "android_client_info": {
+          "package_name": "com.wakana.petaw"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "337761766016-u4ji1k3m7b2knnm2kt4cl9s8f97kuu7m.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.wakana.petaw",
+            "certificate_hash": "654efdf7be0469ceeef742e3cc4c8ee2927952e4"
+          }
+        },
+        {
+          "client_id": "337761766016-so6lgojoohnvvvnomj34qa3mh4ela5lp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAaoWB8nuenKe-tr88dUphV9oOfEWrcTlQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "337761766016-so6lgojoohnvvvnomj34qa3mh4ela5lp.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "337761766016-gjherde05n1m27urrbtcsc9dtiel0i7v.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.wakana.seanema.seanema"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:337761766016:android:9687aebf1a996897947465",
+        "android_client_info": {
+          "package_name": "com.wakana.seanema.seanema"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "337761766016-so6lgojoohnvvvnomj34qa3mh4ela5lp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAaoWB8nuenKe-tr88dUphV9oOfEWrcTlQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "337761766016-so6lgojoohnvvvnomj34qa3mh4ela5lp.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "337761766016-gjherde05n1m27urrbtcsc9dtiel0i7v.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.wakana.seanema.seanema"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

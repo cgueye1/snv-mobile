@@ -1,0 +1,56 @@
+name: petaw
+description: "A new Flutter project."
+publish_to: 'none'
+version: 13.0.2+203
+
+environment:
+  sdk: ^3.10.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  http: ^1.2.0
+  shared_preferences: ^2.2.2
+  flutter_tts: ^4.0.2
+  cached_network_image: ^3.3.1
+  audioplayers: ^6.0.0
+  google_mobile_ads: ^8.0.0
+  path_provider: ^2.1.2
+  firebase_messaging: ^16.2.2
+  firebase_core: ^4.9.0
+  flutter_local_notifications: ^21.0.0
+  package_info_plus:
+  url_launcher:
+  firebase_analytics: ^12.4.1
+  app_tracking_transparency: ^2.0.6+1
+
+dev_dependencies:
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/set.png"
+  min_sdk_android: 21
+  remove_alpha_ios: true
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/layou.png
+    - assets/cauri.png
+    - assets/cola.png
+    - assets/piece.png
+    - assets/hand.png
+    - assets/drag.png
+    - assets/laf.gif
+    - assets/wakh.gif
+    - assets/set.png
+    - shorebird.yaml
+
+  fonts:
+    - family: Canterbury
+      fonts:
+        - asset: fonts/Canterbury.ttf
