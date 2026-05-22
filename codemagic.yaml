@@ -12,12 +12,14 @@ workflows:
       xcode: latest
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: com.wakana.1.61803398875
+        bundle_identifier: com.wakana.1.6180339887
       vars:
         GOOGLE_SERVICE_INFO_PLIST: $GOOGLE_SERVICE_INFO_PLIST
     scripts:
       - name: Get Flutter packages
         script: flutter pub get
+      - name: Disable Swift Package Manager
+        script: flutter config --no-enable-swift-package-manager
       - name: Build iOS
         script: shorebird release ios
     artifacts:
