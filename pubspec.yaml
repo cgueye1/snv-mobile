@@ -1,7 +1,7 @@
 name: petaw
 description: "A new Flutter project."
 publish_to: 'none'
-version: 13.0.2+203
+version: 13.0.3+205
 
 environment:
   sdk: ^3.10.1
@@ -24,6 +24,7 @@ dependencies:
   url_launcher:
   firebase_analytics: ^12.4.1
   app_tracking_transparency: ^2.0.6+1
+
 
 dev_dependencies:
   flutter_launcher_icons: ^0.14.4

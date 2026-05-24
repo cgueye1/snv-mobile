@@ -30,7 +30,7 @@ void main() async {
     statusBarIconBrightness: Brightness.light,
   ));
 
-  // Firebase obligatoire en premier
+  // 1. Firebase obligatoire en premier
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -40,7 +40,7 @@ void main() async {
   // L'app s'affiche immédiatement
   runApp(const SnapVoyanceApp());
 
-  // AdMob + Notifications en arrière-plan
+  // 3. AdMob + Notifications en arrière-plan
   Future.wait([
     MobileAds.instance.initialize().then((_) => adService.initAll()),
     notificationService.init().then((_) =>
@@ -64,9 +64,6 @@ class _SnapVoyanceAppState extends State<SnapVoyanceApp> {
     _lifecycleObserver = AppLifecycleObserver(adService);
     WidgetsBinding.instance.addObserver(_lifecycleObserver);
 
-    // ATT : demandé après que le widget soit construit
-    // Délai de 1s pour laisser l'app s'afficher et éviter
-    // les conflits avec le dialog de notifications FCM
     if (Platform.isIOS) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await Future.delayed(const Duration(seconds: 1));
@@ -80,10 +77,8 @@ class _SnapVoyanceAppState extends State<SnapVoyanceApp> {
     debugPrint('🔍 ATT status: $status');
 
     if (status == TrackingStatus.notDetermined) {
-      // Dialog explicatif AVANT le dialog système (recommandé par Apple)
       if (mounted) await _showTrackingDialog();
       await Future.delayed(const Duration(milliseconds: 300));
-
       final newStatus =
       await AppTrackingTransparency.requestTrackingAuthorization();
       debugPrint('✅ ATT new status: $newStatus');
@@ -96,12 +91,10 @@ class _SnapVoyanceAppState extends State<SnapVoyanceApp> {
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A1A),
-        shape:
-        RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text(
           '🔮 Snap Voyance',
-          style: TextStyle(
-              color: Color(0xFFD4A017), fontWeight: FontWeight.bold),
+          style: TextStyle(color: Color(0xFFD4A017), fontWeight: FontWeight.bold),
         ),
         content: const Text(
           'Pour garder cette app gratuite, nous affichons des publicités.\n\n'
@@ -115,8 +108,7 @@ class _SnapVoyanceAppState extends State<SnapVoyanceApp> {
             onPressed: () => Navigator.pop(ctx),
             child: const Text(
               'Continuer',
-              style: TextStyle(
-                  color: Color(0xFFD4A017), fontWeight: FontWeight.bold),
+              style: TextStyle(color: Color(0xFFD4A017), fontWeight: FontWeight.bold),
             ),
           ),
         ],

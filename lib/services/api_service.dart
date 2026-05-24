@@ -3,6 +3,11 @@ import 'package:http/http.dart' as http;
 import '../models/prediction_model.dart';
 import '../models/user_model.dart';
 
+// Code custom : user supprimé côté backend
+const int kUserNotFoundCode = 460;
+
+class UserNotFoundException implements Exception {}
+
 class ApiService {
   static const String _baseUrl = 'https://seddo.innovimpactdev.cloud';
 
@@ -16,15 +21,10 @@ class ApiService {
       final response = await http.post(
         Uri.parse('$_baseUrl/api/snap/user'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'fullName': fullName,
-          'phone': phone,
-          'date': date,
-        }),
+        body: jsonEncode({'fullName': fullName, 'phone': phone, 'date': date}),
       );
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
-        // L'API retourne : id, fullName, phone, date
         return UserModel(
           id: json['id'],
           fullName: json['fullName'] ?? fullName,
@@ -32,14 +32,13 @@ class ApiService {
           phone: json['phone'] ?? phone,
         );
       }
-      print('ApiService.createOrGetUser error: ${response.statusCode} ${response.body}');
     } catch (e) {
       print('ApiService.createOrGetUser exception: $e');
     }
     return null;
   }
 
-  /// Récupère une prédiction aléatoire non vue
+  /// Récupère une prédiction — lance [UserNotFoundException] si 460
   static Future<PredictionModel?> getPrediction({
     required String zodiacSign,
     required String language,
@@ -58,14 +57,16 @@ class ApiService {
       if (response.statusCode == 200) {
         return PredictionModel.fromJson(jsonDecode(response.body));
       }
+      if (response.statusCode == kUserNotFoundCode) {
+        throw UserNotFoundException();
+      }
     } catch (e) {
-      print('ApiService.getPrediction error: $e');
+      rethrow;
     }
     return null;
   }
 
-  /// Retourne l'URL de l'audio WAV pour une prédiction
-  static String getAudioUrl(int predictionId) {
-    return '$_baseUrl/api/horoscope/audio/$predictionId';
-  }
+  /// URL audio WAV
+  static String getAudioUrl(int predictionId) =>
+      '$_baseUrl/api/horoscope/audio/$predictionId';
 }

@@ -1,4 +1,52 @@
+
 import 'dart:io';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart';
+
+class NotificationService {
+  static final NotificationService _instance = NotificationService._();
+  factory NotificationService() => _instance;
+  NotificationService._();
+
+  final _fcm = FirebaseMessaging.instance;
+
+  Future<void> init() async {
+    // Permissions
+    await _fcm.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+    // Foreground iOS — affiche la notif même quand l'app est ouverte
+    await _fcm.setForegroundNotificationPresentationOptions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+    final token = await _fcm.getToken();
+    debugPrint('🔑 FCM Token : $token');
+  }
+
+  Future<void> subscribeToTopic(String topic) async {
+    await _fcm.subscribeToTopic(topic);
+    debugPrint('✅ Abonné : $topic');
+  }
+
+  Future<void> unsubscribeFromTopic(String topic) async {
+    await _fcm.unsubscribeFromTopic(topic);
+    debugPrint('❌ Désabonné : $topic');
+  }
+
+  Future<String?> getToken() => _fcm.getToken();
+}
+
+
+
+
+
+/*import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -157,4 +205,4 @@ class NotificationService {
     await _fcm.unsubscribeFromTopic(topic);
     debugPrint('❌ Désabonné : $topic');
   }
-}
+}*/
