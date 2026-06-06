@@ -21,12 +21,21 @@ import '../widgets/language_selector.dart';
 import '../widgets/user_info_modal.dart';
 
 const List<String> kZodiacSigns = [
-  'BELIER', 'TAUREAU', 'GEMEAUX', 'CANCER',
-  'LION', 'VIERGE', 'BALANCE', 'SCORPION',
-  'SAGITTAIRE', 'CAPRICORNE', 'VERSEAU', 'POISSONS',
+  'BELIER',
+  'TAUREAU',
+  'GEMEAUX',
+  'CANCER',
+  'LION',
+  'VIERGE',
+  'BALANCE',
+  'SCORPION',
+  'SAGITTAIRE',
+  'CAPRICORNE',
+  'VERSEAU',
+  'POISSONS',
 ];
 
-// ── File de signes ────────────────────────────────────────────────────────────
+// ── File de signes ─────────────────────────────────────────────────────────────
 class _SignQueue {
   final _rnd = Random();
   late List<String> _queue;
@@ -52,68 +61,83 @@ class _SignQueue {
   }
 }
 
-// ── Objet physique ────────────────────────────────────────────────────────────
+// ── Objet physique ─────────────────────────────────────────────────────────────
 class _Obj {
   final String img;
   double x, y, vx, vy, rot, vrot;
   bool flying;
-  _Obj({required this.img, required this.x, required this.y,
-    this.rot=0, this.vx=0, this.vy=0, this.vrot=0, this.flying=false});
+
+  _Obj({
+    required this.img,
+    required this.x,
+    required this.y,
+    this.rot = 0,
+    this.vx = 0,
+    this.vy = 0,
+    this.vrot = 0,
+    this.flying = false,
+  });
 }
 
-// ── Écran principal ───────────────────────────────────────────────────────────
+// ── Écran principal ────────────────────────────────────────────────────────────
 class TaniScreen extends StatefulWidget {
   const TaniScreen({Key? key}) : super(key: key);
-  @override State<TaniScreen> createState() => _TaniScreenState();
+
+  @override
+  State<TaniScreen> createState() => _TaniScreenState();
 }
 
 class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
-
   bool _loading = false;
   bool _isPlaying = false;
   bool _showControls = false;
   bool _isSpeaking = false;
-  int  _throwCount = 0;
+  bool _showRewardedOffer = false; // ← nouveau : afficher l'offre rewarded
+  bool _rewardedRequired = false; // ← rewarded obligatoire non encore vue
+  int _throwCount = 0;
 
   AppParamModel? _appParams;
-  UserModel?     _user;
-  String         _language = 'wo';
+  UserModel? _user;
+  String _language = 'wo';
   PredictionModel? _currentPrediction;
-  String           _predictionText = '';
+  String _predictionText = '';
 
-  final _signQueue   = _SignQueue();
-  bool _handDropped  = false;
-  bool _isDragging   = false;
+  final _signQueue = _SignQueue();
+  bool _handDropped = false;
+  bool _isDragging = false;
 
-  final _tts         = FlutterTts();
+  final _tts = FlutterTts();
   final _audioPlayer = AudioPlayer();
-  final _rnd         = Random();
+  final _rnd = Random();
 
   List<_Obj> _objs = [];
   Size _screenSize = Size.zero;
 
   Ticker? _ticker;
   Duration _lastTick = Duration.zero;
-  bool _simulating   = false;
+  bool _simulating = false;
 
   late AnimationController _pulseCtrl;
-  late Animation<double>   _pulseAnim;
+  late Animation<double> _pulseAnim;
 
   @override
   void initState() {
     super.initState();
     _pulseCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 900))
-      ..repeat(reverse: true);
-    _pulseAnim = Tween(begin: 0.95, end: 1.05)
-        .animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+    _pulseAnim = Tween(
+      begin: 0.95,
+      end: 1.05,
+    ).animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
     _ticker = createTicker(_onTick);
     _initApp();
   }
 
   Future<void> _initApp() async {
     _language = await StorageService.getLanguage();
-    _user     = await StorageService.getUser();
+    _user = await StorageService.getUser();
     setState(() {});
     if (_user == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _showUserModal());
@@ -135,48 +159,86 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final s = MediaQuery.of(context).size;
-    if (_screenSize != s) { _screenSize = s; _placeObjects(); }
+    if (_screenSize != s) {
+      _screenSize = s;
+      _placeObjects();
+    }
   }
 
   void _placeObjects() {
     if (_screenSize == Size.zero) return;
     final w = _screenSize.width, h = _screenSize.height;
     _objs = [
-      _Obj(img:'cauri',x:w*.50,y:h*.20,rot:-0.3), _Obj(img:'cauri',x:w*.72,y:h*.26,rot:0.8),
-      _Obj(img:'cauri',x:w*.82,y:h*.44,rot:-0.5), _Obj(img:'cauri',x:w*.78,y:h*.64,rot:0.2),
-      _Obj(img:'cauri',x:w*.60,y:h*.76,rot:-1.0), _Obj(img:'cauri',x:w*.40,y:h*.76,rot:0.6),
-      _Obj(img:'cauri',x:w*.22,y:h*.64,rot:-0.4), _Obj(img:'cauri',x:w*.18,y:h*.44,rot:1.2),
-      _Obj(img:'cauri',x:w*.28,y:h*.26,rot:-0.7), _Obj(img:'cauri',x:w*.50,y:h*.30,rot:0.9),
-      _Obj(img:'cauri',x:w*.68,y:h*.38,rot:-0.3), _Obj(img:'cauri',x:w*.68,y:h*.58,rot:0.4),
-      _Obj(img:'cauri',x:w*.50,y:h*.66,rot:-0.9), _Obj(img:'cauri',x:w*.32,y:h*.58,rot:0.6),
-      _Obj(img:'cauri',x:w*.32,y:h*.38,rot:-0.2),
-      _Obj(img:'piece',x:w*.44,y:h*.50,rot:0.3),
-      _Obj(img:'cola', x:w*.56,y:h*.48,rot:-0.2),
+      _Obj(img: 'cauri', x: w * .50, y: h * .20, rot: -0.3),
+      _Obj(img: 'cauri', x: w * .72, y: h * .26, rot: 0.8),
+      _Obj(img: 'cauri', x: w * .82, y: h * .44, rot: -0.5),
+      _Obj(img: 'cauri', x: w * .78, y: h * .64, rot: 0.2),
+      _Obj(img: 'cauri', x: w * .60, y: h * .76, rot: -1.0),
+      _Obj(img: 'cauri', x: w * .40, y: h * .76, rot: 0.6),
+      _Obj(img: 'cauri', x: w * .22, y: h * .64, rot: -0.4),
+      _Obj(img: 'cauri', x: w * .18, y: h * .44, rot: 1.2),
+      _Obj(img: 'cauri', x: w * .28, y: h * .26, rot: -0.7),
+      _Obj(img: 'cauri', x: w * .50, y: h * .30, rot: 0.9),
+      _Obj(img: 'cauri', x: w * .68, y: h * .38, rot: -0.3),
+      _Obj(img: 'cauri', x: w * .68, y: h * .58, rot: 0.4),
+      _Obj(img: 'cauri', x: w * .50, y: h * .66, rot: -0.9),
+      _Obj(img: 'cauri', x: w * .32, y: h * .58, rot: 0.6),
+      _Obj(img: 'cauri', x: w * .32, y: h * .38, rot: -0.2),
+      _Obj(img: 'piece', x: w * .44, y: h * .50, rot: 0.3),
+      _Obj(img: 'cola', x: w * .56, y: h * .48, rot: -0.2),
     ];
     setState(() {});
   }
 
+  // ── Simulation physique ──────────────────────────────────────────────────────
+
   void _onTick(Duration elapsed) {
     if (!_simulating) return;
     final dt = _lastTick == Duration.zero
-        ? 0.016 : (elapsed - _lastTick).inMilliseconds / 1000.0;
+        ? 0.016
+        : (elapsed - _lastTick).inMilliseconds / 1000.0;
     _lastTick = elapsed;
     final w = _screenSize.width, h = _screenSize.height;
     const friction = 0.88;
     bool anyFlying = false;
     for (final o in _objs) {
       if (!o.flying) continue;
-      o.x += o.vx * dt; o.y += o.vy * dt; o.rot += o.vrot * dt;
-      if (o.x < w*.12) { o.x=w*.12; o.vx=o.vx.abs(); }
-      if (o.x > w*.88) { o.x=w*.88; o.vx=-o.vx.abs(); }
-      if (o.y < h*.18) { o.y=h*.18; o.vy=o.vy.abs(); }
-      if (o.y > h*.82) { o.y=h*.82; o.vy=-o.vy.abs(); }
-      o.vx *= friction; o.vy *= friction; o.vrot *= friction;
-      final speed = sqrt(o.vx*o.vx + o.vy*o.vy);
-      if (speed < 2) { o.vx=0; o.vy=0; o.vrot=0; o.flying=false; }
-      else anyFlying = true;
+      o.x += o.vx * dt;
+      o.y += o.vy * dt;
+      o.rot += o.vrot * dt;
+      if (o.x < w * .12) {
+        o.x = w * .12;
+        o.vx = o.vx.abs();
+      }
+      if (o.x > w * .88) {
+        o.x = w * .88;
+        o.vx = -o.vx.abs();
+      }
+      if (o.y < h * .18) {
+        o.y = h * .18;
+        o.vy = o.vy.abs();
+      }
+      if (o.y > h * .82) {
+        o.y = h * .82;
+        o.vy = -o.vy.abs();
+      }
+      o.vx *= friction;
+      o.vy *= friction;
+      o.vrot *= friction;
+      final speed = sqrt(o.vx * o.vx + o.vy * o.vy);
+      if (speed < 2) {
+        o.vx = 0;
+        o.vy = 0;
+        o.vrot = 0;
+        o.flying = false;
+      } else
+        anyFlying = true;
     }
-    if (!anyFlying) { _simulating=false; _ticker!.stop(); _lastTick=Duration.zero; }
+    if (!anyFlying) {
+      _simulating = false;
+      _ticker!.stop();
+      _lastTick = Duration.zero;
+    }
     setState(() {});
   }
 
@@ -184,10 +246,13 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
     for (final o in _objs) {
       final angle = _rnd.nextDouble() * 2 * pi;
       final speed = 800 + _rnd.nextDouble() * 1000;
-      o.vx=cos(angle)*speed; o.vy=sin(angle)*speed;
-      o.vrot=(_rnd.nextDouble()-0.5)*30; o.flying=true;
+      o.vx = cos(angle) * speed;
+      o.vy = sin(angle) * speed;
+      o.vrot = (_rnd.nextDouble() - 0.5) * 30;
+      o.flying = true;
     }
-    _simulating=true; _lastTick=Duration.zero;
+    _simulating = true;
+    _lastTick = Duration.zero;
     if (!_ticker!.isActive) _ticker!.start();
     setState(() {});
   }
@@ -195,32 +260,59 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
   void _shakeGently() {
     for (final o in _objs) {
       final angle = _rnd.nextDouble() * 2 * pi;
-      o.vx=cos(angle)*180; o.vy=sin(angle)*180;
-      o.vrot=(_rnd.nextDouble()-0.5)*4; o.flying=true;
+      o.vx = cos(angle) * 180;
+      o.vy = sin(angle) * 180;
+      o.vrot = (_rnd.nextDouble() - 0.5) * 4;
+      o.flying = true;
     }
-    _simulating=true; _lastTick=Duration.zero;
+    _simulating = true;
+    _lastTick = Duration.zero;
     if (!_ticker!.isActive) _ticker!.start();
     setState(() {});
   }
 
+  // ── Drag de la main ──────────────────────────────────────────────────────────
+
   void _onDragStarted() {
     if (_loading || _isPlaying) return;
+    // Si rewarded obligatoire non vue → bloquer et rouvrir le modal
+    if (_rewardedRequired) {
+      _showMandatoryRewarded();
+      return;
+    }
     setState(() => _isDragging = true);
     _shakeGently();
   }
 
   void _onHandDropped(Offset offset) async {
     if (_loading || _isPlaying) return;
-    setState(() { _handDropped=true; _isDragging=false; });
+    // Si rewarded obligatoire non vue → bloquer et rouvrir le modal
+    if (_rewardedRequired) {
+      _showMandatoryRewarded();
+      return;
+    }
+    setState(() {
+      _handDropped = true;
+      _isDragging = false;
+    });
     _throwAll();
     await _fetchAndPlay();
     await Future.delayed(const Duration(seconds: 2));
     if (mounted) setState(() => _handDropped = false);
   }
 
+  // ── Fetch et lecture ─────────────────────────────────────────────────────────
+
   Future<void> _fetchAndPlay() async {
-    if (_user == null) { _showUserModal(); return; }
-    setState(() { _loading=true; _showControls=false; _predictionText=''; });
+    if (_user == null) {
+      _showUserModal();
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _showControls = false;
+      _predictionText = '';
+    });
 
     PredictionModel? prediction;
     int attempts = 0;
@@ -231,11 +323,10 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
       try {
         prediction = await ApiService.getPrediction(
           zodiacSign: sign,
-          language:   _language.toUpperCase(),
-          userId:     _user!.id ?? 1,
+          language: _language.toUpperCase(),
+          userId: _user!.id ?? 1,
         );
       } on UserNotFoundException {
-        // User supprimé côté serveur → effacer local + re-enregistrement
         setState(() => _loading = false);
         await _handleUserNotFound();
         return;
@@ -253,13 +344,14 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
     setState(() => _loading = false);
 
     if (prediction == null || !prediction.success) {
-      _speakFallback(); return;
+      _speakFallback();
+      return;
     }
 
     setState(() {
       _currentPrediction = prediction;
-      _predictionText    = prediction!.message;
-      _isPlaying         = true;
+      _predictionText = prediction!.message;
+      _isPlaying = true;
     });
 
     if (_language == 'wo' && prediction.predictionId != null) {
@@ -269,7 +361,6 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
     }
   }
 
-  /// Efface les données locales et affiche le modal d'inscription
   Future<void> _handleUserNotFound() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('snap_user');
@@ -281,13 +372,16 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
 
   Future<void> _playApiAudio(String url) async {
     try {
-      await _tts.stop(); await _audioPlayer.stop();
-      final response = await http.get(Uri.parse(url))
+      await _tts.stop();
+      await _audioPlayer.stop();
+      final response = await http
+          .get(Uri.parse(url))
           .timeout(const Duration(seconds: 30));
       if (response.statusCode != 200 || response.bodyBytes.isEmpty) {
-        await _speakText(_predictionText); return;
+        await _speakText(_predictionText);
+        return;
       }
-      final tmpDir  = await getTemporaryDirectory();
+      final tmpDir = await getTemporaryDirectory();
       final tmpFile = File('${tmpDir.path}/prediction_audio.wav');
       await tmpFile.writeAsBytes(response.bodyBytes);
       if (mounted) setState(() => _isSpeaking = true);
@@ -302,10 +396,18 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
     await _tts.setSpeechRate(0.42);
     await _tts.setPitch(0.95);
     _tts.setCompletionHandler(() {
-      if (mounted) setState(() { _showControls=true; _isSpeaking=false; });
+      if (mounted)
+        setState(() {
+          _showControls = true;
+          _isSpeaking = false;
+        });
     });
     _audioPlayer.onPlayerComplete.listen((_) {
-      if (mounted) setState(() { _showControls=true; _isSpeaking=false; });
+      if (mounted)
+        setState(() {
+          _showControls = true;
+          _isSpeaking = false;
+        });
     });
   }
 
@@ -316,104 +418,331 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
   }
 
   void _speakFallback() {
-    _speakText({'wo':'Soo ragalul, dellu ellek.','fr':'Il faut revenir demain.','en':'Please come back tomorrow.'}[_language] ?? '');
+    _speakText(
+      {
+            'wo': 'Soo ragalul, dellu ellek.',
+            'fr': 'Il faut revenir demain.',
+            'en': 'Please come back tomorrow.',
+          }[_language] ??
+          '',
+    );
   }
 
   Future<void> _replayAudio() async {
     setState(() => _showControls = false);
     if (_language == 'wo' && _currentPrediction?.predictionId != null) {
-      await _playApiAudio(ApiService.getAudioUrl(_currentPrediction!.predictionId!));
+      await _playApiAudio(
+        ApiService.getAudioUrl(_currentPrediction!.predictionId!),
+      );
     } else {
       await _speakText(_predictionText);
     }
   }
 
-  Future<void> _stopAndReset() async {
-    await _tts.stop(); await _audioPlayer.stop();
-    setState(() {
-      _isPlaying=false; _showControls=false;
-      _predictionText=''; _currentPrediction=null; _isSpeaking=false;
-    });
+  // ── Continuer → proposer rewarded ────────────────────────────────────────────
+  //
+  // C'est LE moment idéal pour la rewarded :
+  // l'utilisateur vient d'écouter sa prédiction et veut peut-être en avoir
+  // ── Continuer → logique pub ──────────────────────────────────────────────────
+  //
+  // Règles :
+  //   - Toutes les 10 prédictions    → rewarded OBLIGATOIRE (pas de choix)
+  //   - Toutes les 3 prédictions     → interstitiel classique (hors multiple 10)
+  //   - Après chaque prédiction      → offre rewarded OPTIONNELLE
+  //   - Si _hideAds                  → reset direct sans pub
+  Future<void> _onContinueTapped() async {
+    await _tts.stop();
+    await _audioPlayer.stop();
     _throwCount++;
-    if (_throwCount % 3 == 0 && !_hideAds) adService.showInterstitial();
+    debugPrint('=== _throwCount: $_throwCount');
+
+    if (_hideAds) {
+      _resetToInitial();
+      return;
+    }
+
+    // Toutes les 10 prédictions → rewarded obligatoire
+    if (_throwCount % 10 == 0) {
+      _showMandatoryRewarded();
+      return;
+    }
+
+    // Toutes les 3 prédictions → interstitiel
+    if (_throwCount % 3 == 0) {
+      adService.showInterstitial();
+    }
+
+    // Toujours → reset direct
+    _resetToInitial();
   }
+
+  // ── Modal de confirmation rewarded (recommandé par AdMob) ──────────────────
+  //
+  // AdMob exige que l'utilisateur soit informé de ce qu'il reçoit
+  // AVANT de lancer la pub. Le bouton de refus doit toujours être présent.
+  // On ne force jamais l'ouverture directe d'une rewarded sans confirmation.
+
+  void _showRewardedConfirmModal({
+    required bool isMandatory, // true = toutes les 10 prédictions
+  }) {
+    final labels = {
+      'wo': {
+        'title_mandatory': 'Xool dëkk, yëgël bu bees!',
+        'title_optional': 'Bëgg na xam-xam bu bees?',
+        'body_mandatory':
+            'Jëfandikool ci 10 yëgël yi. Xool dëkk bu ndaw ngir jël yëgël bu bees ci saa si.',
+        'body_optional':
+            'Xool dëkk bu ndaw ngir jël ci saa si yëgël bu bees, sos la!',
+        'reward': 'Yëgël bu bees ci saa si',
+        'accept': 'Xool dëkk',
+        'decline': 'Deedeet',
+      },
+      'fr': {
+        'title_mandatory': 'Regardez une pub pour continuer !',
+        'title_optional': 'Envie d\'une nouvelle prédiction ?',
+        'body_mandatory':
+            'Vous avez consulté 10 prédictions. Regardez une courte publicité pour obtenir votre prochaine prédiction immédiatement.',
+        'body_optional':
+            'Regardez une courte publicité et recevez une nouvelle prédiction immédiatement, sans attendre !',
+        'reward': '1 nouvelle prédiction immédiate',
+        'accept': 'Regarder la pub',
+        'decline': 'Non merci',
+      },
+      'en': {
+        'title_mandatory': 'Watch an ad to continue!',
+        'title_optional': 'Want a new prediction?',
+        'body_mandatory':
+            'You have used 10 predictions. Watch a short ad to get your next prediction right now.',
+        'body_optional':
+            'Watch a short ad and get a new prediction right now, instantly!',
+        'reward': '1 instant new prediction',
+        'accept': 'Watch ad',
+        'decline': 'No thanks',
+      },
+    };
+
+    final l = labels[_language] ?? labels['fr']!;
+    final title = isMandatory ? l['title_mandatory']! : l['title_optional']!;
+    final body = isMandatory ? l['body_mandatory']! : l['body_optional']!;
+
+    showDialog(
+      context: context,
+      barrierDismissible: !isMandatory,
+      // obligatoire = pas de fermeture en dehors
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(28),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0D0D0D),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: const Color(0xFFD4A017).withOpacity(0.7),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFD4A017).withOpacity(0.15),
+                blurRadius: 24,
+                spreadRadius: 4,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icône
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFFD4A017).withOpacity(0.15),
+                  border: Border.all(
+                    color: const Color(0xFFD4A017).withOpacity(0.5),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.play_circle_outline,
+                  color: Color(0xFFD4A017),
+                  size: 40,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Titre
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFFD4A017),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.4,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Corps
+              Text(
+                body,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  height: 1.6,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Badge récompense
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD4A017).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: const Color(0xFFD4A017).withOpacity(0.4),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.star_rounded,
+                      color: Color(0xFFD4A017),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      l['reward']!,
+                      style: const TextStyle(
+                        color: Color(0xFFD4A017),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 28),
+
+              // Bouton Accepter
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _launchRewarded(isMandatory: isMandatory);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD4A017),
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    l['accept']!,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Bouton Refuser (toujours présent — exigé par AdMob)
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _resetToInitial();
+                },
+                child: Text(
+                  l['decline']!,
+                  style: const TextStyle(color: Colors.white38, fontSize: 14),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Lance réellement la rewarded après confirmation
+  void _launchRewarded({required bool isMandatory}) {
+    adService.showRewarded(
+      onRewarded: (_) {
+        if (mounted) {
+          setState(() {
+            _isPlaying = false;
+            _showControls = false;
+            _predictionText = '';
+            _currentPrediction = null;
+            _isSpeaking = false;
+            _rewardedRequired = false; // ← obligation satisfaite
+          });
+          _throwAll();
+          _fetchAndPlay();
+        }
+      },
+      onDismissed: () {
+        // Pub fermée sans reward → obligation toujours en cours si mandatory
+        if (mounted) _resetToInitial();
+      },
+    );
+  }
+
+  // Rewarded OBLIGATOIRE toutes les 10 prédictions → modal de confirmation
+  void _showMandatoryRewarded() {
+    setState(() => _rewardedRequired = true);
+    _showRewardedConfirmModal(isMandatory: true);
+  }
+
+  void _resetToInitial() {
+    setState(() {
+      _isPlaying = false;
+      _showControls = false;
+      _showRewardedOffer = false;
+      _predictionText = '';
+      _currentPrediction = null;
+      _isSpeaking = false;
+      // _rewardedRequired reste intact si non encore satisfait
+    });
+  }
+
+  // L'utilisateur accepte → modal de confirmation AdMob
+  void _onAcceptRewarded() {
+    setState(() => _showRewardedOffer = false);
+    _showRewardedConfirmModal(isMandatory: false);
+  }
+
+  // L'utilisateur refuse la pub
+  void _onDeclineRewarded() {
+    setState(() => _showRewardedOffer = false);
+    _resetToInitial();
+  }
+
+  // ── Modals ────────────────────────────────────────────────────────────────────
 
   void _showUserModal() {
     showDialog(
-      context: context, barrierDismissible: false,
-      builder: (_) => UserInfoModal(onSaved: () async {
-        Navigator.pop(context);
-        _user     = await StorageService.getUser();
-        _language = await StorageService.getLanguage();
-        setState(() {});
-      }),
-    );
-  }
-
-  @override
-  void dispose() {
-    _ticker?.dispose(); _pulseCtrl.dispose();
-    _tts.stop(); _audioPlayer.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(fit: StackFit.expand, children: [
-        Positioned.fill(child: _buildBoard(size)),
-        Positioned(top:0, left:0, right:0,
-            child: SafeArea(child: _buildAppBar())),
-        if (!_isPlaying && !_loading)
-          Positioned(bottom:50, left:0, right:0,
-              child: Center(child: _buildHint())),
-        if (_isPlaying)
-          Positioned.fill(child: _buildPredictionOverlay(size)),
-        if (_loading)
-          Container(color: Colors.black45,
-              child: const Center(child: CircularProgressIndicator(
-                  color: Color(0xFFD4A017), strokeWidth: 2))),
-        if (_showControls && _isPlaying)
-          Positioned(bottom:0, left:0, right:0,
-              child: AudioControls(language: _language,
-                  onReplay: _replayAudio, onContinue: _stopAndReset)),
-        if (!_isPlaying && !_hideAds)
-          Positioned(bottom:0, left:0, right:0,
-              child: Center(child: BannerAdWidget(adService: adService))),
-      ]),
-    );
-  }
-
-  Widget _buildAppBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter,
-            colors: [Colors.black.withOpacity(0.75), Colors.transparent]),
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => UserInfoModal(
+        onSaved: () async {
+          Navigator.pop(context);
+          _user = await StorageService.getUser();
+          _language = await StorageService.getLanguage();
+          setState(() {});
+        },
       ),
-      child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        GestureDetector(
-          onTap: _showUserBottomSheet,
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.black45, shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFFD4A017).withOpacity(0.7)),
-            ),
-            child: const Icon(Icons.person_outline, color: Color(0xFFD4A017), size: 26),
-          ),
-        ),
-        LanguageSelector(
-          currentLang: _language,
-          onChanged: (lang) {
-            setState(() => _language = lang);
-            StorageService.saveLanguage(lang);
-            _setupTts();
-          },
-        ),
-      ]),
     );
   }
 
@@ -430,201 +759,589 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
           if (mounted) {
             setState(() => _user = null);
             Navigator.pop(context);
-            WidgetsBinding.instance.addPostFrameCallback((_) => _showUserModal());
+            WidgetsBinding.instance.addPostFrameCallback(
+              (_) => _showUserModal(),
+            );
           }
         },
       ),
     );
   }
 
-  Widget _buildBoard(Size size) {
-    return SizedBox.expand(child: Stack(children: [
-      Positioned.fill(child: Image.asset('assets/layou.png', fit: BoxFit.cover)),
-      if (_isPlaying)
-        Positioned.fill(child: Container(color: Colors.black.withOpacity(0.5))),
-      ..._objs.map((o) => _buildObj(o)),
-      if (!_isPlaying && !_handDropped)
-        Positioned(
-          left: size.width * 0.06, top: size.height * 0.42,
-          child: _buildDraggableHand(),
+  @override
+  void dispose() {
+    _ticker?.dispose();
+    _pulseCtrl.dispose();
+    _tts.stop();
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  // ── Build ─────────────────────────────────────────────────────────────────────
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Board (fond + objets + main)
+          Positioned.fill(child: _buildBoard(size)),
+
+          // AppBar
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(child: _buildAppBar()),
+          ),
+
+          // Hint "glissez votre main"
+          if (!_isPlaying && !_loading)
+            Positioned(
+              bottom: 50,
+              left: 0,
+              right: 0,
+              child: Center(child: _buildHint()),
+            ),
+
+          // Overlay prédiction
+          if (_isPlaying) Positioned.fill(child: _buildPredictionOverlay(size)),
+
+          // Loading
+          if (_loading)
+            Container(
+              color: Colors.black45,
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: Color(0xFFD4A017),
+                  strokeWidth: 2,
+                ),
+              ),
+            ),
+
+          // Contrôles audio (replay / continuer)
+          if (_showControls && _isPlaying)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: AudioControls(
+                language: _language,
+                onReplay: _replayAudio,
+                onContinue:
+                    _onContinueTapped, // ← pointe vers le nouveau handler
+              ),
+            ),
+
+          // ── Offre rewarded ──────────────────────────────────────────────────
+          // Apparaît après que l'utilisateur appuie sur "Continuer"
+          // Se superpose à tout le reste
+          if (_showRewardedOffer)
+            Positioned.fill(child: _buildRewardedOfferOverlay()),
+
+          // Bannière AdMob en bas (état initial seulement)
+          if (!_isPlaying && !_hideAds)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Center(child: BannerAdWidget(adService: adService)),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ── AppBar ────────────────────────────────────────────────────────────────────
+
+  Widget _buildAppBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Colors.black.withOpacity(0.75), Colors.transparent],
         ),
-    ]));
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          GestureDetector(
+            onTap: _showUserBottomSheet,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.black45,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: const Color(0xFFD4A017).withOpacity(0.7),
+                ),
+              ),
+              child: const Icon(
+                Icons.person_outline,
+                color: Color(0xFFD4A017),
+                size: 26,
+              ),
+            ),
+          ),
+          LanguageSelector(
+            currentLang: _language,
+            onChanged: (lang) {
+              setState(() => _language = lang);
+              StorageService.saveLanguage(lang);
+              _setupTts();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Board ─────────────────────────────────────────────────────────────────────
+
+  Widget _buildBoard(Size size) {
+    return SizedBox.expand(
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset('assets/layou.png', fit: BoxFit.cover),
+          ),
+          if (_isPlaying)
+            Positioned.fill(
+              child: Container(color: Colors.black.withOpacity(0.5)),
+            ),
+          ..._objs.map((o) => _buildObj(o)),
+          if (!_isPlaying && !_handDropped)
+            Positioned(
+              left: size.width * 0.06,
+              top: size.height * 0.42,
+              child: _buildDraggableHand(),
+            ),
+        ],
+      ),
+    );
   }
 
   Widget _buildObj(_Obj o) {
     double w, h;
     switch (o.img) {
-      case 'piece': w=72; h=72; break;
-      case 'cola':  w=90; h=115; break;
-      default:      w=88; h=74; break;
+      case 'piece':
+        w = 72;
+        h = 72;
+        break;
+      case 'cola':
+        w = 90;
+        h = 115;
+        break;
+      default:
+        w = 88;
+        h = 74;
+        break;
     }
     return Positioned(
-      left: o.x - w/2, top: o.y - h/2,
-      child: Transform.rotate(angle: o.rot,
-          child: Image.asset('assets/${o.img}.png', width:w, height:h,
-              fit: BoxFit.contain,
-              errorBuilder: (_,__,___) => const SizedBox())),
+      left: o.x - w / 2,
+      top: o.y - h / 2,
+      child: Transform.rotate(
+        angle: o.rot,
+        child: Image.asset(
+          'assets/${o.img}.png',
+          width: w,
+          height: h,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => const SizedBox(),
+        ),
+      ),
     );
   }
 
   Widget _buildDraggableHand() {
     return Draggable<String>(
       data: 'hand',
-      feedback: Image.asset('assets/hand.png', width:180, height:228,
-          errorBuilder: (_,__,___) => const SizedBox()),
-      childWhenDragging: const SizedBox(width:180, height:228,),
+      feedback: Image.asset(
+        'assets/hand.png',
+        width: 180,
+        height: 228,
+        errorBuilder: (_, __, ___) => const SizedBox(),
+      ),
+      childWhenDragging: const SizedBox(width: 180, height: 228),
       onDragStarted: _onDragStarted,
       onDraggableCanceled: (v, offset) => _onHandDropped(offset),
       onDragEnd: (details) => _onHandDropped(details.offset),
-      child: Stack(clipBehavior: Clip.none, children: [
-        Image.asset('assets/hand.png', width:180, height:228,
-            errorBuilder: (_,__,___) => const SizedBox()),
-        Positioned(bottom:-10, left:10,
-            child: Image.asset('assets/drag.png', width:55,
-                errorBuilder: (_,__,___) => const SizedBox())),
-      ]),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Image.asset(
+            'assets/hand.png',
+            width: 180,
+            height: 228,
+            errorBuilder: (_, __, ___) => const SizedBox(),
+          ),
+          Positioned(
+            bottom: -10,
+            left: 10,
+            child: Image.asset(
+              'assets/drag.png',
+              width: 55,
+              errorBuilder: (_, __, ___) => const SizedBox(),
+            ),
+          ),
+        ],
+      ),
     );
   }
+
+  // ── Hint ──────────────────────────────────────────────────────────────────────
 
   Widget _buildHint() {
     final labels = {
-      'wo':'Jëlee sa loxo ci kanam','fr':'Glissez votre main','en':'Drag your hand'
+      'wo': 'Jëlee sa loxo ci kanam',
+      'fr': 'Glissez votre main',
+      'en': 'Drag your hand',
     };
     return AnimatedBuilder(
       animation: _pulseAnim,
-      builder: (_,child) => Transform.scale(scale: _pulseAnim.value, child: child),
+      builder: (_, child) =>
+          Transform.scale(scale: _pulseAnim.value, child: child),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal:20, vertical:8),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.black54, borderRadius: BorderRadius.circular(20),
+          color: Colors.black54,
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(color: const Color(0xFFD4A017).withOpacity(0.6)),
         ),
-        child: Text(labels[_language] ?? labels['fr']!,
-            style: const TextStyle(color: Color(0xFFD4A017),
-                fontSize:15, fontWeight: FontWeight.w600, letterSpacing:0.5)),
+        child: Text(
+          labels[_language] ?? labels['fr']!,
+          style: const TextStyle(
+            color: Color(0xFFD4A017),
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
+        ),
       ),
     );
   }
 
+  // ── Overlay prédiction ────────────────────────────────────────────────────────
+
   Widget _buildPredictionOverlay(Size size) {
     final hasSponsor = _appParams?.hasSponsor ?? false;
-
-    return SafeArea(child: Column(children: [
-      const SizedBox(height: 70),
-      Expanded(flex: 3, child: Center(
-        child: _isSpeaking
-        // Pendant la lecture → toujours laf.gif
-            ? Image.asset('assets/laf.gif', fit: BoxFit.contain,
-            errorBuilder: (_,__,___) => const SizedBox())
-        // Pas de lecture → sponsor si disponible, sinon laf.gif
-            : hasSponsor
-            ? _buildSponsorWidget()
-            : Image.asset('assets/laf.gif', fit: BoxFit.contain,
-            errorBuilder: (_,__,___) => const SizedBox()),
-      )),
-
-      // wakh.gif uniquement pendant la lecture audio
-      if (_isSpeaking)
-        Image.asset('assets/wakh.gif', width: size.width * 0.28,
-            errorBuilder: (_,__,___) => const SizedBox()),
-
-      if (_predictionText.isNotEmpty)
-        Expanded(flex: 2, child: Container(
-          margin: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.65),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFD4A017).withOpacity(0.35)),
-          ),
-          child: SingleChildScrollView(child: Text(_predictionText,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize:20, color:Colors.white,
-                fontWeight: FontWeight.w600, height:1.6, letterSpacing:0.3,
-                shadows: [Shadow(color:Colors.black, blurRadius:4, offset: Offset(1,1))]),
-          )),
-        )),
-
-      Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: GestureDetector(
-          onTap: _stopAndReset,
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.white12, shape: BoxShape.circle,
-              border: Border.all(color: Colors.white24),
+    return SafeArea(
+      child: Column(
+        children: [
+          const SizedBox(height: 70),
+          Expanded(
+            flex: 3,
+            child: Center(
+              child: _isSpeaking
+                  ? Image.asset(
+                      'assets/laf.gif',
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => const SizedBox(),
+                    )
+                  : hasSponsor
+                  ? _buildSponsorWidget()
+                  : Image.asset(
+                      'assets/laf.gif',
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => const SizedBox(),
+                    ),
             ),
-            child: const Icon(Icons.stop_rounded, color: Colors.white54, size: 24),
+          ),
+          if (_isSpeaking)
+            Image.asset(
+              'assets/wakh.gif',
+              width: size.width * 0.28,
+              errorBuilder: (_, __, ___) => const SizedBox(),
+            ),
+          if (_predictionText.isNotEmpty)
+            Expanded(
+              flex: 2,
+              child: Container(
+                margin: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.65),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFFD4A017).withOpacity(0.35),
+                  ),
+                ),
+                child: SingleChildScrollView(
+                  child: Text(
+                    _predictionText,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      height: 1.6,
+                      letterSpacing: 0.3,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black,
+                          blurRadius: 4,
+                          offset: Offset(1, 1),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: GestureDetector(
+              onTap: _onContinueTapped,
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white12,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white24),
+                ),
+                child: const Icon(
+                  Icons.stop_rounded,
+                  color: Colors.white54,
+                  size: 24,
+                ),
+              ),
+            ),
+          ),
+          if (_showControls) const SizedBox(height: 100),
+        ],
+      ),
+    );
+  }
+
+  // ── Overlay offre Rewarded ────────────────────────────────────────────────────
+  //
+  // S'affiche après que l'utilisateur appuie sur "Continuer".
+  // Il peut accepter (regarder la pub et obtenir une nouvelle prédiction)
+  // ou refuser (retour à l'écran initial normalement).
+
+  Widget _buildRewardedOfferOverlay() {
+    final labels = {
+      'wo': {
+        'title': 'Xam-xam bu bees?',
+        'body': 'Xool dëkk bu ndaw ak yëgël bu bees ci sa yoon.',
+        'accept': 'Xool dëkk',
+        'decline': 'Amul solo',
+      },
+      'fr': {
+        'title': 'Une nouvelle prédiction ?',
+        'body':
+            'Regardez une courte publicité et recevez immédiatement une nouvelle prédiction.',
+        'accept': 'Regarder la pub',
+        'decline': 'Non merci',
+      },
+      'en': {
+        'title': 'New prediction?',
+        'body': 'Watch a short ad and get a new prediction right now.',
+        'accept': 'Watch ad',
+        'decline': 'No thanks',
+      },
+    };
+    final l = labels[_language] ?? labels['fr']!;
+
+    return Container(
+      color: Colors.black.withOpacity(0.82),
+      child: Center(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 32),
+          padding: const EdgeInsets.all(28),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0D0D0D),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: const Color(0xFFD4A017).withOpacity(0.7),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFD4A017).withOpacity(0.15),
+                blurRadius: 24,
+                spreadRadius: 4,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icône
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFFD4A017).withOpacity(0.15),
+                  border: Border.all(
+                    color: const Color(0xFFD4A017).withOpacity(0.5),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.play_circle_outline,
+                  color: Color(0xFFD4A017),
+                  size: 40,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Titre
+              Text(
+                l['title']!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFFD4A017),
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.4,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Corps
+              Text(
+                l['body']!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                  height: 1.6,
+                ),
+              ),
+              const SizedBox(height: 28),
+
+              // Bouton Accepter
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _onAcceptRewarded,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD4A017),
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    l['accept']!,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Bouton Refuser
+              TextButton(
+                onPressed: _onDeclineRewarded,
+                child: Text(
+                  l['decline']!,
+                  style: const TextStyle(color: Colors.white38, fontSize: 14),
+                ),
+              ),
+            ],
           ),
         ),
       ),
-      if (_showControls) const SizedBox(height: 100),
-    ]));
+    );
   }
 
-  /// Widget sponsor : remplace laf.gif avec image cliquable et beau style
+  // ── Sponsor ───────────────────────────────────────────────────────────────────
+
   Widget _buildSponsorWidget() {
     return GestureDetector(
       onTap: () async {
         final link = _appParams!.linkSponsor!;
-        final uri  = Uri.parse(link);
-        if (await canLaunchUrl(uri)) await launchUrl(uri,
-            mode: LaunchMode.externalApplication);
+        final uri = Uri.parse(link);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
       },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 32),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFD4A017).withOpacity(0.6), width: 2),
+          border: Border.all(
+            color: const Color(0xFFD4A017).withOpacity(0.6),
+            width: 2,
+          ),
           boxShadow: [
-            BoxShadow(color: const Color(0xFFD4A017).withOpacity(0.2),
-                blurRadius: 16, spreadRadius: 2),
+            BoxShadow(
+              color: const Color(0xFFD4A017).withOpacity(0.2),
+              blurRadius: 16,
+              spreadRadius: 2,
+            ),
           ],
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(14),
-          child: Stack(children: [
-            // Image sponsor
-            Image.network(
-              _appParams!.imageSponsor!,
-              fit: BoxFit.cover, width: double.infinity,
-              errorBuilder: (_,__,___) => Image.asset('assets/laf.gif',
-                  fit: BoxFit.contain),
-            ),
-            // Badge "Sponsorisé" en bas
-            Positioned(bottom: 0, left: 0, right: 0,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter, end: Alignment.topCenter,
-                    colors: [Colors.black.withOpacity(0.7), Colors.transparent],
+          child: Stack(
+            children: [
+              Image.network(
+                _appParams!.imageSponsor!,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                errorBuilder: (_, __, ___) =>
+                    Image.asset('assets/laf.gif', fit: BoxFit.contain),
+              ),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.7),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(
+                        Icons.open_in_new,
+                        color: Color(0xFFD4A017),
+                        size: 14,
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        'Appuyez pour en savoir plus',
+                        style: TextStyle(
+                          color: Color(0xFFD4A017),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Icon(Icons.open_in_new, color: Color(0xFFD4A017), size: 14),
-                    SizedBox(width: 6),
-                    Text('Appuyez pour en savoir plus',
-                        style: TextStyle(color: Color(0xFFD4A017),
-                            fontSize: 11, fontWeight: FontWeight.w600)),
-                  ],
-                ),
               ),
-            ),
-          ]),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-// ── Fiche profil ──────────────────────────────────────────────────────────────
+// ── Fiche profil ───────────────────────────────────────────────────────────────
 class _UserProfileSheet extends StatelessWidget {
   final UserModel? user;
   final VoidCallback onDeleted;
+
   const _UserProfileSheet({required this.user, required this.onDeleted});
 
   @override
@@ -636,89 +1353,166 @@ class _UserProfileSheet extends StatelessWidget {
         border: Border.all(color: const Color(0xFFD4A017), width: 1),
       ),
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Container(width:40, height:4,
-            decoration: BoxDecoration(color: Colors.white24,
-                borderRadius: BorderRadius.circular(2))),
-        const SizedBox(height: 20),
-        Container(width:72, height:72,
-            decoration: BoxDecoration(shape: BoxShape.circle,
-                color: const Color(0xFF1A1A1A),
-                border: Border.all(color: const Color(0xFFD4A017), width: 2)),
-            child: const Icon(Icons.person, color: Color(0xFFD4A017), size: 40)),
-        const SizedBox(height: 16),
-        if (user != null) ...[
-          Text(user!.fullName,
-              style: const TextStyle(color: Colors.white, fontSize: 20,
-                  fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.white24,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
           const SizedBox(height: 20),
-          _InfoRow(icon: Icons.calendar_today_outlined,
-              label: 'Date de naissance', value: user!.birthDate),
-          const SizedBox(height: 12),
-          _InfoRow(icon: Icons.phone_outlined,
-              label: 'Téléphone', value: user!.phone),
-        ] else
-          const Text('Aucun profil',
-              style: TextStyle(color: Colors.white54, fontSize: 16)),
-        const SizedBox(height: 32),
-        const Divider(color: Color(0xFF2A2A2A)),
-        const SizedBox(height: 8),
-        GestureDetector(
-          onTap: () => _confirmDelete(context),
-          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: const [
-            Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
-            SizedBox(width: 8),
-            Text('Supprimer mon compte',
-                style: TextStyle(color: Colors.redAccent, fontSize: 15,
-                    fontWeight: FontWeight.w500)),
-          ]),
-        ),
-      ]),
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF1A1A1A),
+              border: Border.all(color: const Color(0xFFD4A017), width: 2),
+            ),
+            child: const Icon(Icons.person, color: Color(0xFFD4A017), size: 40),
+          ),
+          const SizedBox(height: 16),
+          if (user != null) ...[
+            Text(
+              user!.fullName,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 20),
+            _InfoRow(
+              icon: Icons.calendar_today_outlined,
+              label: 'Date de naissance',
+              value: user!.birthDate,
+            ),
+            const SizedBox(height: 12),
+            _InfoRow(
+              icon: Icons.phone_outlined,
+              label: 'Telephone',
+              value: user!.phone,
+            ),
+          ] else
+            const Text(
+              'Aucun profil',
+              style: TextStyle(color: Colors.white54, fontSize: 16),
+            ),
+          const SizedBox(height: 32),
+          const Divider(color: Color(0xFF2A2A2A)),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: () => _confirmDelete(context),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'Supprimer mon compte',
+                  style: TextStyle(
+                    color: Colors.redAccent,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   void _confirmDelete(BuildContext context) {
-    showDialog(context: context, builder: (ctx) => AlertDialog(
-      backgroundColor: const Color(0xFF1A1A1A),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: const Text('Supprimer ?',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-      content: const Text('Toutes vos données seront effacées.',
-          style: TextStyle(color: Colors.white70, height: 1.5)),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx),
-            child: const Text('Annuler', style: TextStyle(color: Colors.white54))),
-        TextButton(
-          onPressed: () { Navigator.pop(ctx); onDeleted(); },
-          child: const Text('Supprimer',
-              style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Supprimer ?',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
-      ],
-    ));
+        content: const Text(
+          'Toutes vos donnees seront effacees.',
+          style: TextStyle(color: Colors.white70, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              'Annuler',
+              style: TextStyle(color: Colors.white54),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              onDeleted();
+            },
+            child: const Text(
+              'Supprimer',
+              style: TextStyle(
+                color: Colors.redAccent,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
 class _InfoRow extends StatelessWidget {
-  final IconData icon; final String label, value;
-  const _InfoRow({required this.icon, required this.label, required this.value});
+  final IconData icon;
+  final String label, value;
+
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(color: const Color(0xFF1A1A1A),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF2A2A2A))),
-      child: Row(children: [
-        Icon(icon, color: const Color(0xFFD4A017), size: 20),
-        const SizedBox(width: 12),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, style: const TextStyle(color: Colors.white38, fontSize: 11)),
-          const SizedBox(height: 2),
-          Text(value, style: const TextStyle(color: Colors.white,
-              fontSize: 15, fontWeight: FontWeight.w500)),
-        ]),
-      ]),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF2A2A2A)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: const Color(0xFFD4A017), size: 20),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(color: Colors.white38, fontSize: 11),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
