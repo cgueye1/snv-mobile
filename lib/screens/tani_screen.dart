@@ -21,18 +21,9 @@ import '../widgets/language_selector.dart';
 import '../widgets/user_info_modal.dart';
 
 const List<String> kZodiacSigns = [
-  'BELIER',
-  'TAUREAU',
-  'GEMEAUX',
-  'CANCER',
-  'LION',
-  'VIERGE',
-  'BALANCE',
-  'SCORPION',
-  'SAGITTAIRE',
-  'CAPRICORNE',
-  'VERSEAU',
-  'POISSONS',
+  'BELIER', 'TAUREAU', 'GEMEAUX', 'CANCER',
+  'LION', 'VIERGE', 'BALANCE', 'SCORPION',
+  'SAGITTAIRE', 'CAPRICORNE', 'VERSEAU', 'POISSONS',
 ];
 
 // ── File de signes ─────────────────────────────────────────────────────────────
@@ -88,56 +79,62 @@ class TaniScreen extends StatefulWidget {
 }
 
 class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
-  bool _loading = false;
-  bool _isPlaying = false;
+
+  // ── État général ──
+  bool _loading      = false;
+  bool _isPlaying    = false;
   bool _showControls = false;
-  bool _isSpeaking = false;
-  bool _showRewardedOffer = false; // ← nouveau : afficher l'offre rewarded
-  bool _rewardedRequired = false; // ← rewarded obligatoire non encore vue
-  int _throwCount = 0;
+  bool _isSpeaking   = false;
+  int  _throwCount   = 0;
 
-  AppParamModel? _appParams;
-  UserModel? _user;
-  String _language = 'wo';
+  // ── Pub rewarded ──
+  // _rewardedRequired : l'utilisateur doit voir la pub avant de continuer
+  // _rewardedDialogOpen : le dialog est déjà ouvert, ne pas en ouvrir un autre
+  bool _rewardedRequired   = false;
+  bool _rewardedDialogOpen = false;
+
+  // ── Données ──
+  AppParamModel?   _appParams;
+  UserModel?       _user;
+  String           _language = 'wo';
   PredictionModel? _currentPrediction;
-  String _predictionText = '';
+  String           _predictionText = '';
 
-  final _signQueue = _SignQueue();
+  // ── Physique ──
+  final _signQueue  = _SignQueue();
   bool _handDropped = false;
-  bool _isDragging = false;
+  bool _isDragging  = false;
 
-  final _tts = FlutterTts();
+  final _tts         = FlutterTts();
   final _audioPlayer = AudioPlayer();
-  final _rnd = Random();
+  final _rnd         = Random();
 
   List<_Obj> _objs = [];
-  Size _screenSize = Size.zero;
+  Size _screenSize  = Size.zero;
 
-  Ticker? _ticker;
+  Ticker?  _ticker;
   Duration _lastTick = Duration.zero;
-  bool _simulating = false;
+  bool _simulating   = false;
 
   late AnimationController _pulseCtrl;
-  late Animation<double> _pulseAnim;
+  late Animation<double>   _pulseAnim;
 
   @override
   void initState() {
     super.initState();
     _pulseCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    )..repeat(reverse: true);
-    _pulseAnim = Tween(
-      begin: 0.95,
-      end: 1.05,
-    ).animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
+        vsync: this,
+        duration: const Duration(milliseconds: 900))
+      ..repeat(reverse: true);
+    _pulseAnim = Tween(begin: 0.95, end: 1.05)
+        .animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
     _ticker = createTicker(_onTick);
     _initApp();
   }
 
   Future<void> _initApp() async {
     _language = await StorageService.getLanguage();
-    _user = await StorageService.getUser();
+    _user     = await StorageService.getUser();
     setState(() {});
     if (_user == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _showUserModal());
@@ -185,7 +182,7 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
       _Obj(img: 'cauri', x: w * .32, y: h * .58, rot: 0.6),
       _Obj(img: 'cauri', x: w * .32, y: h * .38, rot: -0.2),
       _Obj(img: 'piece', x: w * .44, y: h * .50, rot: 0.3),
-      _Obj(img: 'cola', x: w * .56, y: h * .48, rot: -0.2),
+      _Obj(img: 'cola',  x: w * .56, y: h * .48, rot: -0.2),
     ];
     setState(() {});
   }
@@ -203,36 +200,22 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
     bool anyFlying = false;
     for (final o in _objs) {
       if (!o.flying) continue;
-      o.x += o.vx * dt;
-      o.y += o.vy * dt;
+      o.x   += o.vx * dt;
+      o.y   += o.vy * dt;
       o.rot += o.vrot * dt;
-      if (o.x < w * .12) {
-        o.x = w * .12;
-        o.vx = o.vx.abs();
-      }
-      if (o.x > w * .88) {
-        o.x = w * .88;
-        o.vx = -o.vx.abs();
-      }
-      if (o.y < h * .18) {
-        o.y = h * .18;
-        o.vy = o.vy.abs();
-      }
-      if (o.y > h * .82) {
-        o.y = h * .82;
-        o.vy = -o.vy.abs();
-      }
+      if (o.x < w * .12) { o.x = w * .12; o.vx =  o.vx.abs(); }
+      if (o.x > w * .88) { o.x = w * .88; o.vx = -o.vx.abs(); }
+      if (o.y < h * .18) { o.y = h * .18; o.vy =  o.vy.abs(); }
+      if (o.y > h * .82) { o.y = h * .82; o.vy = -o.vy.abs(); }
       o.vx *= friction;
       o.vy *= friction;
       o.vrot *= friction;
       final speed = sqrt(o.vx * o.vx + o.vy * o.vy);
       if (speed < 2) {
-        o.vx = 0;
-        o.vy = 0;
-        o.vrot = 0;
-        o.flying = false;
-      } else
+        o.vx = 0; o.vy = 0; o.vrot = 0; o.flying = false;
+      } else {
         anyFlying = true;
+      }
     }
     if (!anyFlying) {
       _simulating = false;
@@ -246,8 +229,8 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
     for (final o in _objs) {
       final angle = _rnd.nextDouble() * 2 * pi;
       final speed = 800 + _rnd.nextDouble() * 1000;
-      o.vx = cos(angle) * speed;
-      o.vy = sin(angle) * speed;
+      o.vx   = cos(angle) * speed;
+      o.vy   = sin(angle) * speed;
       o.vrot = (_rnd.nextDouble() - 0.5) * 30;
       o.flying = true;
     }
@@ -260,8 +243,8 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
   void _shakeGently() {
     for (final o in _objs) {
       final angle = _rnd.nextDouble() * 2 * pi;
-      o.vx = cos(angle) * 180;
-      o.vy = sin(angle) * 180;
+      o.vx   = cos(angle) * 180;
+      o.vy   = sin(angle) * 180;
       o.vrot = (_rnd.nextDouble() - 0.5) * 4;
       o.flying = true;
     }
@@ -275,7 +258,7 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
 
   void _onDragStarted() {
     if (_loading || _isPlaying) return;
-    // Si rewarded obligatoire non vue → bloquer et rouvrir le modal
+    // Si rewarded obligatoire non vue → bloquer, ouvrir le modal UNE SEULE FOIS
     if (_rewardedRequired) {
       _showMandatoryRewarded();
       return;
@@ -286,15 +269,12 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
 
   void _onHandDropped(Offset offset) async {
     if (_loading || _isPlaying) return;
-    // Si rewarded obligatoire non vue → bloquer et rouvrir le modal
+    // Si rewarded obligatoire non vue → bloquer, ouvrir le modal UNE SEULE FOIS
     if (_rewardedRequired) {
       _showMandatoryRewarded();
       return;
     }
-    setState(() {
-      _handDropped = true;
-      _isDragging = false;
-    });
+    setState(() { _handDropped = true; _isDragging = false; });
     _throwAll();
     await _fetchAndPlay();
     await Future.delayed(const Duration(seconds: 2));
@@ -304,15 +284,8 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
   // ── Fetch et lecture ─────────────────────────────────────────────────────────
 
   Future<void> _fetchAndPlay() async {
-    if (_user == null) {
-      _showUserModal();
-      return;
-    }
-    setState(() {
-      _loading = true;
-      _showControls = false;
-      _predictionText = '';
-    });
+    if (_user == null) { _showUserModal(); return; }
+    setState(() { _loading = true; _showControls = false; _predictionText = ''; });
 
     PredictionModel? prediction;
     int attempts = 0;
@@ -323,8 +296,8 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
       try {
         prediction = await ApiService.getPrediction(
           zodiacSign: sign,
-          language: _language.toUpperCase(),
-          userId: _user!.id ?? 1,
+          language:   _language.toUpperCase(),
+          userId:     _user!.id ?? 1,
         );
       } on UserNotFoundException {
         setState(() => _loading = false);
@@ -333,7 +306,6 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
       } catch (_) {
         break;
       }
-
       if (prediction == null) break;
       if (prediction.success) break;
       _signQueue.advance();
@@ -350,8 +322,8 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
 
     setState(() {
       _currentPrediction = prediction;
-      _predictionText = prediction!.message;
-      _isPlaying = true;
+      _predictionText    = prediction!.message;
+      _isPlaying         = true;
     });
 
     if (_language == 'wo' && prediction.predictionId != null) {
@@ -381,7 +353,7 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
         await _speakText(_predictionText);
         return;
       }
-      final tmpDir = await getTemporaryDirectory();
+      final tmpDir  = await getTemporaryDirectory();
       final tmpFile = File('${tmpDir.path}/prediction_audio.wav');
       await tmpFile.writeAsBytes(response.bodyBytes);
       if (mounted) setState(() => _isSpeaking = true);
@@ -396,18 +368,10 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
     await _tts.setSpeechRate(0.42);
     await _tts.setPitch(0.95);
     _tts.setCompletionHandler(() {
-      if (mounted)
-        setState(() {
-          _showControls = true;
-          _isSpeaking = false;
-        });
+      if (mounted) setState(() { _showControls = true; _isSpeaking = false; });
     });
     _audioPlayer.onPlayerComplete.listen((_) {
-      if (mounted)
-        setState(() {
-          _showControls = true;
-          _isSpeaking = false;
-        });
+      if (mounted) setState(() { _showControls = true; _isSpeaking = false; });
     });
   }
 
@@ -418,41 +382,33 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
   }
 
   void _speakFallback() {
-    _speakText(
-      {
-            'wo': 'Soo ragalul, dellu ellek.',
-            'fr': 'Il faut revenir demain.',
-            'en': 'Please come back tomorrow.',
-          }[_language] ??
-          '',
-    );
+    _speakText({
+      'wo': 'Soo ragalul, dellu ellek.',
+      'fr': 'Il faut revenir demain.',
+      'en': 'Please come back tomorrow.',
+    }[_language] ?? '');
   }
 
   Future<void> _replayAudio() async {
     setState(() => _showControls = false);
     if (_language == 'wo' && _currentPrediction?.predictionId != null) {
-      await _playApiAudio(
-        ApiService.getAudioUrl(_currentPrediction!.predictionId!),
-      );
+      await _playApiAudio(ApiService.getAudioUrl(_currentPrediction!.predictionId!));
     } else {
       await _speakText(_predictionText);
     }
   }
 
-  // ── Continuer → proposer rewarded ────────────────────────────────────────────
-  //
-  // C'est LE moment idéal pour la rewarded :
-  // l'utilisateur vient d'écouter sa prédiction et veut peut-être en avoir
-  // ── Continuer → logique pub ──────────────────────────────────────────────────
+  // ── Logique pub ──────────────────────────────────────────────────────────────
   //
   // Règles :
-  //   - Toutes les 10 prédictions    → rewarded OBLIGATOIRE (pas de choix)
-  //   - Toutes les 3 prédictions     → interstitiel classique (hors multiple 10)
-  //   - Après chaque prédiction      → offre rewarded OPTIONNELLE
-  //   - Si _hideAds                  → reset direct sans pub
+  //   - Toutes les 10 prédictions → rewarded OBLIGATOIRE avec modal
+  //   - Toutes les 3 prédictions  → interstitiel classique
+  //   - Sinon                     → reset direct
+
   Future<void> _onContinueTapped() async {
     await _tts.stop();
     await _audioPlayer.stop();
+
     _throwCount++;
     debugPrint('=== _throwCount: $_throwCount');
 
@@ -472,63 +428,53 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
       adService.showInterstitial();
     }
 
-    // Toujours → reset direct
+    // Reset direct
     _resetToInitial();
   }
 
-  // ── Modal de confirmation rewarded (recommandé par AdMob) ──────────────────
+  // ── Modal rewarded obligatoire ───────────────────────────────────────────────
   //
-  // AdMob exige que l'utilisateur soit informé de ce qu'il reçoit
-  // AVANT de lancer la pub. Le bouton de refus doit toujours être présent.
-  // On ne force jamais l'ouverture directe d'une rewarded sans confirmation.
+  // Appelé à chaque fois que la main est glissée quand _rewardedRequired = true,
+  // et à la 10ème prédiction. Le flag _rewardedDialogOpen empêche d'ouvrir
+  // plusieurs dialogs en même temps quand l'utilisateur glisse plusieurs fois.
 
-  void _showRewardedConfirmModal({
-    required bool isMandatory, // true = toutes les 10 prédictions
-  }) {
+  void _showMandatoryRewarded() {
+    // Déjà ouvert → ne pas en ouvrir un autre
+    if (_rewardedDialogOpen) return;
+
+    setState(() {
+      _rewardedRequired   = true;
+      _rewardedDialogOpen = true;
+    });
+
     final labels = {
       'wo': {
-        'title_mandatory': 'Xool dëkk, yëgël bu bees!',
-        'title_optional': 'Bëgg na xam-xam bu bees?',
-        'body_mandatory':
-            'Jëfandikool ci 10 yëgël yi. Xool dëkk bu ndaw ngir jël yëgël bu bees ci saa si.',
-        'body_optional':
-            'Xool dëkk bu ndaw ngir jël ci saa si yëgël bu bees, sos la!',
-        'reward': 'Yëgël bu bees ci saa si',
-        'accept': 'Xool dëkk',
+        'title':   'Xool dëkk, yëgël bu bees!',
+        'body':    'Jëfandikool ci 10 yëgël yi. Xool dëkk bu ndaw ngir jël yëgël bu bees ci saa si.',
+        'reward':  'Yëgël bu bees ci saa si',
+        'accept':  'Xool dëkk',
         'decline': 'Deedeet',
       },
       'fr': {
-        'title_mandatory': 'Regardez une pub pour continuer !',
-        'title_optional': 'Envie d\'une nouvelle prédiction ?',
-        'body_mandatory':
-            'Vous avez consulté 10 prédictions. Regardez une courte publicité pour obtenir votre prochaine prédiction immédiatement.',
-        'body_optional':
-            'Regardez une courte publicité et recevez une nouvelle prédiction immédiatement, sans attendre !',
-        'reward': '1 nouvelle prédiction immédiate',
-        'accept': 'Regarder la pub',
+        'title':   'Regardez une pub pour continuer !',
+        'body':    'Vous avez consulté 10 prédictions. Regardez une courte publicité pour obtenir votre prochaine prédiction immédiatement.',
+        'reward':  '1 nouvelle prédiction immédiate',
+        'accept':  'Regarder la pub',
         'decline': 'Non merci',
       },
       'en': {
-        'title_mandatory': 'Watch an ad to continue!',
-        'title_optional': 'Want a new prediction?',
-        'body_mandatory':
-            'You have used 10 predictions. Watch a short ad to get your next prediction right now.',
-        'body_optional':
-            'Watch a short ad and get a new prediction right now, instantly!',
-        'reward': '1 instant new prediction',
-        'accept': 'Watch ad',
+        'title':   'Watch an ad to continue!',
+        'body':    'You have used 10 predictions. Watch a short ad to get your next prediction right now.',
+        'reward':  '1 instant new prediction',
+        'accept':  'Watch ad',
         'decline': 'No thanks',
       },
     };
-
     final l = labels[_language] ?? labels['fr']!;
-    final title = isMandatory ? l['title_mandatory']! : l['title_optional']!;
-    final body = isMandatory ? l['body_mandatory']! : l['body_optional']!;
 
     showDialog(
       context: context,
-      barrierDismissible: !isMandatory,
-      // obligatoire = pas de fermeture en dehors
+      barrierDismissible: false, // ne peut pas fermer en cliquant dehors
       builder: (ctx) => Dialog(
         backgroundColor: Colors.transparent,
         child: Container(
@@ -537,15 +483,12 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
             color: const Color(0xFF0D0D0D),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: const Color(0xFFD4A017).withOpacity(0.7),
-              width: 1.5,
-            ),
+                color: const Color(0xFFD4A017).withOpacity(0.7), width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFD4A017).withOpacity(0.15),
-                blurRadius: 24,
-                spreadRadius: 4,
-              ),
+                  color: const Color(0xFFD4A017).withOpacity(0.15),
+                  blurRadius: 24,
+                  spreadRadius: 4),
             ],
           ),
           child: Column(
@@ -558,72 +501,50 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
                   shape: BoxShape.circle,
                   color: const Color(0xFFD4A017).withOpacity(0.15),
                   border: Border.all(
-                    color: const Color(0xFFD4A017).withOpacity(0.5),
-                  ),
+                      color: const Color(0xFFD4A017).withOpacity(0.5)),
                 ),
-                child: const Icon(
-                  Icons.play_circle_outline,
-                  color: Color(0xFFD4A017),
-                  size: 40,
-                ),
+                child: const Icon(Icons.play_circle_outline,
+                    color: Color(0xFFD4A017), size: 40),
               ),
               const SizedBox(height: 20),
 
               // Titre
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Color(0xFFD4A017),
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.4,
-                ),
-              ),
+              Text(l['title']!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      color: Color(0xFFD4A017),
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.4)),
               const SizedBox(height: 12),
 
               // Corps
-              Text(
-                body,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 13,
-                  height: 1.6,
-                ),
-              ),
+              Text(l['body']!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      color: Colors.white70, fontSize: 13, height: 1.6)),
               const SizedBox(height: 16),
 
               // Badge récompense
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: const Color(0xFFD4A017).withOpacity(0.12),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: const Color(0xFFD4A017).withOpacity(0.4),
-                  ),
+                      color: const Color(0xFFD4A017).withOpacity(0.4)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.star_rounded,
-                      color: Color(0xFFD4A017),
-                      size: 18,
-                    ),
+                    const Icon(Icons.star_rounded,
+                        color: Color(0xFFD4A017), size: 18),
                     const SizedBox(width: 8),
-                    Text(
-                      l['reward']!,
-                      style: const TextStyle(
-                        color: Color(0xFFD4A017),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    Text(l['reward']!,
+                        style: const TextStyle(
+                            color: Color(0xFFD4A017),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600)),
                   ],
                 ),
               ),
@@ -635,98 +556,85 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.pop(ctx);
-                    _launchRewarded(isMandatory: isMandatory);
+                    _launchRewarded();
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFD4A017),
                     foregroundColor: Colors.black,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                        borderRadius: BorderRadius.circular(12)),
                     elevation: 0,
                   ),
-                  child: Text(
-                    l['accept']!,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: Text(l['accept']!,
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(height: 10),
 
-              // Bouton Refuser (toujours présent — exigé par AdMob)
+              // Bouton Refuser — toujours présent (exigé par AdMob)
+              // L'utilisateur retourne à l'écran initial mais _rewardedRequired
+              // reste true → le modal reviendra au prochain glissement
               TextButton(
                 onPressed: () {
                   Navigator.pop(ctx);
                   _resetToInitial();
+                  // Ne pas reset _rewardedRequired ici
+                  // → le modal reviendra au prochain glissement
                 },
-                child: Text(
-                  l['decline']!,
-                  style: const TextStyle(color: Colors.white38, fontSize: 14),
-                ),
+                child: Text(l['decline']!,
+                    style: const TextStyle(
+                        color: Colors.white38, fontSize: 14)),
               ),
             ],
           ),
         ),
       ),
-    );
+    ).then((_) {
+      // Dialog fermé (quelle que soit la raison) → libérer le flag
+      if (mounted) {
+        setState(() => _rewardedDialogOpen = false);
+      }
+    });
   }
 
-  // Lance réellement la rewarded après confirmation
-  void _launchRewarded({required bool isMandatory}) {
+  // Lance la pub rewarded après confirmation
+  void _launchRewarded() {
     adService.showRewarded(
       onRewarded: (_) {
+        // Récompense gagnée → obligation satisfaite + nouvelle prédiction
         if (mounted) {
           setState(() {
-            _isPlaying = false;
-            _showControls = false;
-            _predictionText = '';
+            _rewardedRequired = false;
+            _isPlaying        = false;
+            _showControls     = false;
+            _predictionText   = '';
             _currentPrediction = null;
-            _isSpeaking = false;
-            _rewardedRequired = false; // ← obligation satisfaite
+            _isSpeaking       = false;
           });
           _throwAll();
           _fetchAndPlay();
         }
       },
       onDismissed: () {
-        // Pub fermée sans reward → obligation toujours en cours si mandatory
+        // Pub fermée sans reward → _rewardedRequired reste true
+        // L'utilisateur devra réessayer
         if (mounted) _resetToInitial();
       },
     );
   }
 
-  // Rewarded OBLIGATOIRE toutes les 10 prédictions → modal de confirmation
-  void _showMandatoryRewarded() {
-    setState(() => _rewardedRequired = true);
-    _showRewardedConfirmModal(isMandatory: true);
-  }
-
   void _resetToInitial() {
     setState(() {
-      _isPlaying = false;
-      _showControls = false;
-      _showRewardedOffer = false;
-      _predictionText = '';
+      _isPlaying         = false;
+      _showControls      = false;
+      _predictionText    = '';
       _currentPrediction = null;
-      _isSpeaking = false;
-      // _rewardedRequired reste intact si non encore satisfait
+      _isSpeaking        = false;
+      // _rewardedRequired reste intact si obligation non satisfaite
+      // _rewardedDialogOpen géré par .then() du showDialog
     });
-  }
-
-  // L'utilisateur accepte → modal de confirmation AdMob
-  void _onAcceptRewarded() {
-    setState(() => _showRewardedOffer = false);
-    _showRewardedConfirmModal(isMandatory: false);
-  }
-
-  // L'utilisateur refuse la pub
-  void _onDeclineRewarded() {
-    setState(() => _showRewardedOffer = false);
-    _resetToInitial();
   }
 
   // ── Modals ────────────────────────────────────────────────────────────────────
@@ -735,14 +643,12 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => UserInfoModal(
-        onSaved: () async {
-          Navigator.pop(context);
-          _user = await StorageService.getUser();
-          _language = await StorageService.getLanguage();
-          setState(() {});
-        },
-      ),
+      builder: (_) => UserInfoModal(onSaved: () async {
+        Navigator.pop(context);
+        _user     = await StorageService.getUser();
+        _language = await StorageService.getLanguage();
+        setState(() {});
+      }),
     );
   }
 
@@ -759,9 +665,8 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
           if (mounted) {
             setState(() => _user = null);
             Navigator.pop(context);
-            WidgetsBinding.instance.addPostFrameCallback(
-              (_) => _showUserModal(),
-            );
+            WidgetsBinding.instance
+                .addPostFrameCallback((_) => _showUserModal());
           }
         },
       ),
@@ -784,74 +689,48 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
     final size = MediaQuery.of(context).size;
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Board (fond + objets + main)
-          Positioned.fill(child: _buildBoard(size)),
+      body: Stack(fit: StackFit.expand, children: [
 
-          // AppBar
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: SafeArea(child: _buildAppBar()),
+        // Board
+        Positioned.fill(child: _buildBoard(size)),
+
+        // AppBar
+        Positioned(top: 0, left: 0, right: 0,
+            child: SafeArea(child: _buildAppBar())),
+
+        // Hint
+        if (!_isPlaying && !_loading)
+          Positioned(bottom: 50, left: 0, right: 0,
+              child: Center(child: _buildHint())),
+
+        // Overlay prédiction
+        if (_isPlaying)
+          Positioned.fill(child: _buildPredictionOverlay(size)),
+
+        // Loading
+        if (_loading)
+          Container(
+            color: Colors.black45,
+            child: const Center(
+              child: CircularProgressIndicator(
+                  color: Color(0xFFD4A017), strokeWidth: 2),
+            ),
           ),
 
-          // Hint "glissez votre main"
-          if (!_isPlaying && !_loading)
-            Positioned(
-              bottom: 50,
-              left: 0,
-              right: 0,
-              child: Center(child: _buildHint()),
-            ),
-
-          // Overlay prédiction
-          if (_isPlaying) Positioned.fill(child: _buildPredictionOverlay(size)),
-
-          // Loading
-          if (_loading)
-            Container(
-              color: Colors.black45,
-              child: const Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xFFD4A017),
-                  strokeWidth: 2,
-                ),
-              ),
-            ),
-
-          // Contrôles audio (replay / continuer)
-          if (_showControls && _isPlaying)
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
+        // Contrôles audio
+        if (_showControls && _isPlaying)
+          Positioned(bottom: 0, left: 0, right: 0,
               child: AudioControls(
-                language: _language,
-                onReplay: _replayAudio,
-                onContinue:
-                    _onContinueTapped, // ← pointe vers le nouveau handler
-              ),
-            ),
+                language:   _language,
+                onReplay:   _replayAudio,
+                onContinue: _onContinueTapped,
+              )),
 
-          // ── Offre rewarded ──────────────────────────────────────────────────
-          // Apparaît après que l'utilisateur appuie sur "Continuer"
-          // Se superpose à tout le reste
-          if (_showRewardedOffer)
-            Positioned.fill(child: _buildRewardedOfferOverlay()),
-
-          // Bannière AdMob en bas (état initial seulement)
-          if (!_isPlaying && !_hideAds)
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Center(child: BannerAdWidget(adService: adService)),
-            ),
-        ],
-      ),
+        // Bannière AdMob
+        if (!_isPlaying && !_hideAds)
+          Positioned(bottom: 0, left: 0, right: 0,
+              child: Center(child: BannerAdWidget(adService: adService))),
+      ]),
     );
   }
 
@@ -878,14 +757,10 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
                 color: Colors.black45,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: const Color(0xFFD4A017).withOpacity(0.7),
-                ),
+                    color: const Color(0xFFD4A017).withOpacity(0.7)),
               ),
-              child: const Icon(
-                Icons.person_outline,
-                color: Color(0xFFD4A017),
-                size: 26,
-              ),
+              child: const Icon(Icons.person_outline,
+                  color: Color(0xFFD4A017), size: 26),
             ),
           ),
           LanguageSelector(
@@ -905,55 +780,38 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
 
   Widget _buildBoard(Size size) {
     return SizedBox.expand(
-      child: Stack(
-        children: [
+      child: Stack(children: [
+        Positioned.fill(
+            child: Image.asset('assets/layou.png', fit: BoxFit.cover)),
+        if (_isPlaying)
           Positioned.fill(
-            child: Image.asset('assets/layou.png', fit: BoxFit.cover),
+              child: Container(color: Colors.black.withOpacity(0.5))),
+        ..._objs.map((o) => _buildObj(o)),
+        if (!_isPlaying && !_handDropped)
+          Positioned(
+            left: size.width * 0.06,
+            top:  size.height * 0.42,
+            child: _buildDraggableHand(),
           ),
-          if (_isPlaying)
-            Positioned.fill(
-              child: Container(color: Colors.black.withOpacity(0.5)),
-            ),
-          ..._objs.map((o) => _buildObj(o)),
-          if (!_isPlaying && !_handDropped)
-            Positioned(
-              left: size.width * 0.06,
-              top: size.height * 0.42,
-              child: _buildDraggableHand(),
-            ),
-        ],
-      ),
+      ]),
     );
   }
 
   Widget _buildObj(_Obj o) {
     double w, h;
     switch (o.img) {
-      case 'piece':
-        w = 72;
-        h = 72;
-        break;
-      case 'cola':
-        w = 90;
-        h = 115;
-        break;
-      default:
-        w = 88;
-        h = 74;
-        break;
+      case 'piece': w = 72;  h = 72;  break;
+      case 'cola':  w = 90;  h = 115; break;
+      default:      w = 88;  h = 74;  break;
     }
     return Positioned(
       left: o.x - w / 2,
-      top: o.y - h / 2,
+      top:  o.y - h / 2,
       child: Transform.rotate(
         angle: o.rot,
-        child: Image.asset(
-          'assets/${o.img}.png',
-          width: w,
-          height: h,
-          fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => const SizedBox(),
-        ),
+        child: Image.asset('assets/${o.img}.png',
+            width: w, height: h, fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => const SizedBox()),
       ),
     );
   }
@@ -961,36 +819,24 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
   Widget _buildDraggableHand() {
     return Draggable<String>(
       data: 'hand',
-      feedback: Image.asset(
-        'assets/hand.png',
-        width: 180,
-        height: 228,
-        errorBuilder: (_, __, ___) => const SizedBox(),
-      ),
+      feedback: Image.asset('assets/hand.png',
+          width: 180, height: 228,
+          errorBuilder: (_, __, ___) => const SizedBox()),
       childWhenDragging: const SizedBox(width: 180, height: 228),
       onDragStarted: _onDragStarted,
       onDraggableCanceled: (v, offset) => _onHandDropped(offset),
       onDragEnd: (details) => _onHandDropped(details.offset),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Image.asset(
-            'assets/hand.png',
-            width: 180,
-            height: 228,
-            errorBuilder: (_, __, ___) => const SizedBox(),
-          ),
-          Positioned(
-            bottom: -10,
-            left: 10,
-            child: Image.asset(
-              'assets/drag.png',
+      child: Stack(clipBehavior: Clip.none, children: [
+        Image.asset('assets/hand.png',
+            width: 180, height: 228,
+            errorBuilder: (_, __, ___) => const SizedBox()),
+        Positioned(
+          bottom: -10, left: 10,
+          child: Image.asset('assets/drag.png',
               width: 55,
-              errorBuilder: (_, __, ___) => const SizedBox(),
-            ),
-          ),
-        ],
-      ),
+              errorBuilder: (_, __, ___) => const SizedBox()),
+        ),
+      ]),
     );
   }
 
@@ -1011,17 +857,15 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
         decoration: BoxDecoration(
           color: Colors.black54,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFD4A017).withOpacity(0.6)),
+          border: Border.all(
+              color: const Color(0xFFD4A017).withOpacity(0.6)),
         ),
-        child: Text(
-          labels[_language] ?? labels['fr']!,
-          style: const TextStyle(
-            color: Color(0xFFD4A017),
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
-          ),
-        ),
+        child: Text(labels[_language] ?? labels['fr']!,
+            style: const TextStyle(
+                color: Color(0xFFD4A017),
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5)),
       ),
     );
   }
@@ -1031,226 +875,74 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
   Widget _buildPredictionOverlay(Size size) {
     final hasSponsor = _appParams?.hasSponsor ?? false;
     return SafeArea(
-      child: Column(
-        children: [
-          const SizedBox(height: 70),
-          Expanded(
-            flex: 3,
-            child: Center(
-              child: _isSpeaking
-                  ? Image.asset(
-                      'assets/laf.gif',
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const SizedBox(),
-                    )
-                  : hasSponsor
-                  ? _buildSponsorWidget()
-                  : Image.asset(
-                      'assets/laf.gif',
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const SizedBox(),
-                    ),
-            ),
-          ),
-          if (_isSpeaking)
-            Image.asset(
-              'assets/wakh.gif',
-              width: size.width * 0.28,
-              errorBuilder: (_, __, ___) => const SizedBox(),
-            ),
-          if (_predictionText.isNotEmpty)
-            Expanded(
-              flex: 2,
-              child: Container(
-                margin: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.65),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: const Color(0xFFD4A017).withOpacity(0.35),
-                  ),
-                ),
-                child: SingleChildScrollView(
-                  child: Text(
-                    _predictionText,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      height: 1.6,
-                      letterSpacing: 0.3,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black,
-                          blurRadius: 4,
-                          offset: Offset(1, 1),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: GestureDetector(
-              onTap: _onContinueTapped,
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.white12,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white24),
-                ),
-                child: const Icon(
-                  Icons.stop_rounded,
-                  color: Colors.white54,
-                  size: 24,
-                ),
-              ),
-            ),
-          ),
-          if (_showControls) const SizedBox(height: 100),
-        ],
-      ),
-    );
-  }
-
-  // ── Overlay offre Rewarded ────────────────────────────────────────────────────
-  //
-  // S'affiche après que l'utilisateur appuie sur "Continuer".
-  // Il peut accepter (regarder la pub et obtenir une nouvelle prédiction)
-  // ou refuser (retour à l'écran initial normalement).
-
-  Widget _buildRewardedOfferOverlay() {
-    final labels = {
-      'wo': {
-        'title': 'Xam-xam bu bees?',
-        'body': 'Xool dëkk bu ndaw ak yëgël bu bees ci sa yoon.',
-        'accept': 'Xool dëkk',
-        'decline': 'Amul solo',
-      },
-      'fr': {
-        'title': 'Une nouvelle prédiction ?',
-        'body':
-            'Regardez une courte publicité et recevez immédiatement une nouvelle prédiction.',
-        'accept': 'Regarder la pub',
-        'decline': 'Non merci',
-      },
-      'en': {
-        'title': 'New prediction?',
-        'body': 'Watch a short ad and get a new prediction right now.',
-        'accept': 'Watch ad',
-        'decline': 'No thanks',
-      },
-    };
-    final l = labels[_language] ?? labels['fr']!;
-
-    return Container(
-      color: Colors.black.withOpacity(0.82),
-      child: Center(
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 32),
-          padding: const EdgeInsets.all(28),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0D0D0D),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: const Color(0xFFD4A017).withOpacity(0.7),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFD4A017).withOpacity(0.15),
-                blurRadius: 24,
-                spreadRadius: 4,
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Icône
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFFD4A017).withOpacity(0.15),
-                  border: Border.all(
-                    color: const Color(0xFFD4A017).withOpacity(0.5),
-                  ),
-                ),
-                child: const Icon(
-                  Icons.play_circle_outline,
-                  color: Color(0xFFD4A017),
-                  size: 40,
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Titre
-              Text(
-                l['title']!,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Color(0xFFD4A017),
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.4,
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Corps
-              Text(
-                l['body']!,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                  height: 1.6,
-                ),
-              ),
-              const SizedBox(height: 28),
-
-              // Bouton Accepter
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _onAcceptRewarded,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFD4A017),
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Text(
-                    l['accept']!,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Bouton Refuser
-              TextButton(
-                onPressed: _onDeclineRewarded,
-                child: Text(
-                  l['decline']!,
-                  style: const TextStyle(color: Colors.white38, fontSize: 14),
-                ),
-              ),
-            ],
+      child: Column(children: [
+        const SizedBox(height: 70),
+        Expanded(
+          flex: 3,
+          child: Center(
+            child: _isSpeaking
+                ? Image.asset('assets/laf.gif',
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const SizedBox())
+                : hasSponsor
+                ? _buildSponsorWidget()
+                : Image.asset('assets/laf.gif',
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const SizedBox()),
           ),
         ),
-      ),
+        if (_isSpeaking)
+          Image.asset('assets/wakh.gif',
+              width: size.width * 0.28,
+              errorBuilder: (_, __, ___) => const SizedBox()),
+        if (_predictionText.isNotEmpty)
+          Expanded(
+            flex: 2,
+            child: Container(
+              margin: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.65),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                    color: const Color(0xFFD4A017).withOpacity(0.35)),
+              ),
+              child: SingleChildScrollView(
+                child: Text(_predictionText,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        fontSize: 20,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        height: 1.6,
+                        letterSpacing: 0.3,
+                        shadows: [
+                          Shadow(
+                              color: Colors.black,
+                              blurRadius: 4,
+                              offset: Offset(1, 1))
+                        ])),
+              ),
+            ),
+          ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: GestureDetector(
+            onTap: _onContinueTapped,
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white12,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white24),
+              ),
+              child: const Icon(Icons.stop_rounded,
+                  color: Colors.white54, size: 24),
+            ),
+          ),
+        ),
+        if (_showControls) const SizedBox(height: 100),
+      ]),
     );
   }
 
@@ -1260,7 +952,7 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
     return GestureDetector(
       onTap: () async {
         final link = _appParams!.linkSponsor!;
-        final uri = Uri.parse(link);
+        final uri  = Uri.parse(link);
         if (await canLaunchUrl(uri)) {
           await launchUrl(uri, mode: LaunchMode.externalApplication);
         }
@@ -1270,67 +962,52 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: const Color(0xFFD4A017).withOpacity(0.6),
-            width: 2,
-          ),
+              color: const Color(0xFFD4A017).withOpacity(0.6), width: 2),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFD4A017).withOpacity(0.2),
-              blurRadius: 16,
-              spreadRadius: 2,
-            ),
+                color: const Color(0xFFD4A017).withOpacity(0.2),
+                blurRadius: 16,
+                spreadRadius: 2),
           ],
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(14),
-          child: Stack(
-            children: [
-              Image.network(
-                _appParams!.imageSponsor!,
+          child: Stack(children: [
+            Image.network(_appParams!.imageSponsor!,
                 fit: BoxFit.cover,
                 width: double.infinity,
                 errorBuilder: (_, __, ___) =>
-                    Image.asset('assets/laf.gif', fit: BoxFit.contain),
-              ),
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                      colors: [
-                        Colors.black.withOpacity(0.7),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Icon(
-                        Icons.open_in_new,
-                        color: Color(0xFFD4A017),
-                        size: 14,
-                      ),
-                      SizedBox(width: 6),
-                      Text(
-                        'Appuyez pour en savoir plus',
-                        style: TextStyle(
-                          color: Color(0xFFD4A017),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                    Image.asset('assets/laf.gif', fit: BoxFit.contain)),
+            Positioned(
+              bottom: 0, left: 0, right: 0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.7),
+                      Colors.transparent,
                     ],
                   ),
                 ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(Icons.open_in_new,
+                        color: Color(0xFFD4A017), size: 14),
+                    SizedBox(width: 6),
+                    Text('Appuyez pour en savoir plus',
+                        style: TextStyle(
+                            color: Color(0xFFD4A017),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600)),
+                  ],
+                ),
               ),
-            ],
-          ),
+            ),
+          ]),
         ),
       ),
     );
@@ -1341,7 +1018,6 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
 class _UserProfileSheet extends StatelessWidget {
   final UserModel? user;
   final VoidCallback onDeleted;
-
   const _UserProfileSheet({required this.user, required this.onDeleted});
 
   @override
@@ -1349,83 +1025,70 @@ class _UserProfileSheet extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF0D0D0D),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius:
+        const BorderRadius.vertical(top: Radius.circular(24)),
         border: Border.all(color: const Color(0xFFD4A017), width: 1),
       ),
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Container(
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.white24,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2))),
+        const SizedBox(height: 20),
+        Container(
+          width: 72,
+          height: 72,
+          decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: const Color(0xFF1A1A1A),
-              border: Border.all(color: const Color(0xFFD4A017), width: 2),
-            ),
-            child: const Icon(Icons.person, color: Color(0xFFD4A017), size: 40),
-          ),
-          const SizedBox(height: 16),
-          if (user != null) ...[
-            Text(
-              user!.fullName,
+              border:
+              Border.all(color: const Color(0xFFD4A017), width: 2)),
+          child: const Icon(Icons.person,
+              color: Color(0xFFD4A017), size: 40),
+        ),
+        const SizedBox(height: 16),
+        if (user != null) ...[
+          Text(user!.fullName,
               style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(height: 20),
-            _InfoRow(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5)),
+          const SizedBox(height: 20),
+          _InfoRow(
               icon: Icons.calendar_today_outlined,
               label: 'Date de naissance',
-              value: user!.birthDate,
-            ),
-            const SizedBox(height: 12),
-            _InfoRow(
+              value: user!.birthDate),
+          const SizedBox(height: 12),
+          _InfoRow(
               icon: Icons.phone_outlined,
               label: 'Telephone',
-              value: user!.phone,
-            ),
-          ] else
-            const Text(
-              'Aucun profil',
-              style: TextStyle(color: Colors.white54, fontSize: 16),
-            ),
-          const SizedBox(height: 32),
-          const Divider(color: Color(0xFF2A2A2A)),
-          const SizedBox(height: 8),
-          GestureDetector(
-            onTap: () => _confirmDelete(context),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
-                SizedBox(width: 8),
-                Text(
-                  'Supprimer mon compte',
+              value: user!.phone),
+        ] else
+          const Text('Aucun profil',
+              style: TextStyle(color: Colors.white54, fontSize: 16)),
+        const SizedBox(height: 32),
+        const Divider(color: Color(0xFF2A2A2A)),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: () => _confirmDelete(context),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+              SizedBox(width: 8),
+              Text('Supprimer mon compte',
                   style: TextStyle(
-                    color: Colors.redAccent,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
+                      color: Colors.redAccent,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500)),
+            ],
           ),
-        ],
-      ),
+        ),
+      ]),
     );
   }
 
@@ -1434,35 +1097,27 @@ class _UserProfileSheet extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A1A),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          'Supprimer ?',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        content: const Text(
-          'Toutes vos donnees seront effacees.',
-          style: TextStyle(color: Colors.white70, height: 1.5),
-        ),
+        shape:
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Supprimer ?',
+            style: TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold)),
+        content: const Text('Toutes vos donnees seront effacees.',
+            style: TextStyle(color: Colors.white70, height: 1.5)),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text(
-              'Annuler',
-              style: TextStyle(color: Colors.white54),
-            ),
-          ),
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Annuler',
+                  style: TextStyle(color: Colors.white54))),
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
               onDeleted();
             },
-            child: const Text(
-              'Supprimer',
-              style: TextStyle(
-                color: Colors.redAccent,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            child: const Text('Supprimer',
+                style: TextStyle(
+                    color: Colors.redAccent,
+                    fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -1473,46 +1128,32 @@ class _UserProfileSheet extends StatelessWidget {
 class _InfoRow extends StatelessWidget {
   final IconData icon;
   final String label, value;
-
-  const _InfoRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
+  const _InfoRow(
+      {required this.icon, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF2A2A2A)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: const Color(0xFFD4A017), size: 20),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(color: Colors.white38, fontSize: 11),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: const TextStyle(
+          color: const Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF2A2A2A))),
+      child: Row(children: [
+        Icon(icon, color: const Color(0xFFD4A017), size: 20),
+        const SizedBox(width: 12),
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label,
+              style: const TextStyle(
+                  color: Colors.white38, fontSize: 11)),
+          const SizedBox(height: 2),
+          Text(value,
+              style: const TextStyle(
                   color: Colors.white,
                   fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+                  fontWeight: FontWeight.w500)),
+        ]),
+      ]),
     );
   }
 }
