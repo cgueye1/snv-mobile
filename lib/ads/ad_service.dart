@@ -104,7 +104,7 @@ class AdService {
   bool _rewardedReady = false;
   int _rewardedFailCount = 0;
 
-  void loadRewarded() {
+  /*void loadRewarded() {
     RewardedAd.load(
       adUnitId: AdConfig.rewarded,
       request: const AdRequest(),
@@ -124,12 +124,12 @@ class AdService {
         },
       ),
     );
-  }
+  }*/
 
   /// Affiche la pub récompensée.
   /// [onRewarded] appelé si l'utilisateur gagne la récompense.
   /// [onDismissed] appelé dans tous les cas à la fermeture.
-  void showRewarded({
+  /*void showRewarded({
     required void Function(RewardItem reward) onRewarded,
     VoidCallback? onDismissed,
   }) {
@@ -160,7 +160,7 @@ class AdService {
       onUserEarnedReward: (_, reward) => onRewarded(reward),
     );
     _rewardedReady = false;
-  }
+  }*/
 
   // ── App Open ──────────────────────────────────────────────
   AppOpenAd? _appOpenAd;
@@ -225,7 +225,7 @@ class AdService {
   void initAll() {
     loadBanner();
     loadInterstitial();
-    loadRewarded();
+    //loadRewarded();
     loadAppOpen();
   }
 
