@@ -335,7 +335,7 @@ class _TaniScreenState extends State<TaniScreen> with TickerProviderStateMixin {
       _predictionText=''; _currentPrediction=null; _isSpeaking=false;
     });
     _throwCount++;
-    if (_throwCount % 5 == 0 && !_hideAds) adService.showInterstitial();
+    if (_throwCount % 3 == 0 && !_hideAds) adService.showInterstitial();
   }
 
   void _showUserModal() {

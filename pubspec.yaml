@@ -1,7 +1,7 @@
 name: petaw
 description: "A new Flutter project."
 publish_to: 'none'
-version: 13.0.5+209
+version: 13.0.6+210
 
 environment:
   sdk: ^3.10.1

@@ -61,7 +61,7 @@ dependencies {
     // ← AJOUT obligatoire pour le desugaring
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     // ← Adaptateur de médiation Meta Audience Network pour AdMob
-    implementation("com.google.ads.mediation:facebook:6.21.0.0")
+    //implementation("com.google.ads.mediation:facebook:6.21.0.0")
 
 
 
