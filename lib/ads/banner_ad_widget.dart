@@ -11,13 +11,18 @@ class BannerAdWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!adService.isBannerLoaded || adService.bannerAd == null) {
-      return const SizedBox.shrink();
-    }
-    return SizedBox(
-      width: adService.bannerAd!.size.width.toDouble(),
-      height: adService.bannerAd!.size.height.toDouble(),
-      child: AdWidget(ad: adService.bannerAd!),
+    return AnimatedBuilder(
+      animation: adService,
+      builder: (context, _) {
+        if (!adService.isBannerLoaded || adService.bannerAd == null) {
+          return const SizedBox.shrink();
+        }
+        return SizedBox(
+          width: adService.bannerAd!.size.width.toDouble(),
+          height: adService.bannerAd!.size.height.toDouble(),
+          child: AdWidget(ad: adService.bannerAd!),
+        );
+      },
     );
   }
 }

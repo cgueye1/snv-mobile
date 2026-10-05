@@ -18,3 +18,14 @@ samples, guidance on mobile development, and a full API reference.
 
 
 /Users/macbookpro/Downloads/flutter3.38.3/bin/flutter # snv-mobile
+
+
+adb tcpip 5555
+adb shell ip route
+adb connect 192.168.1.5:5555
+adb devices
+flutter run -d IP_DU_TELEPHONE:5555
+
+flutter build apk --release
+
+flutter build appbundle --release

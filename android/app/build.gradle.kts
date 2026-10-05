@@ -26,9 +26,9 @@ android {
         isCoreLibraryDesugaringEnabled = true
     }
 
-  /*  kotlinOptions {
+    kotlinOptions {
         jvmTarget = JavaVersion.VERSION_17.toString()
-    }*/
+    }
 
 
     signingConfigs {

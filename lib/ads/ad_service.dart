@@ -8,8 +8,7 @@ import 'ad_config.dart';
 /// - Rechargement automatique après affichage
 /// - Gestion des erreurs sans crash
 /// - Pas de pub sur le premier lancement (app open seulement au 2e)
-class AdService {
-
+class AdService extends ChangeNotifier {
   // ── Banner ────────────────────────────────────────────────
   BannerAd? _bannerAd;
   bool _bannerLoaded = false;
@@ -23,11 +22,15 @@ class AdService {
       size: AdSize.banner,
       request: const AdRequest(),
       listener: BannerAdListener(
-        onAdLoaded: (_) => _bannerLoaded = true,
+        onAdLoaded: (_) {
+          _bannerLoaded = true;
+          notifyListeners();
+        },
         onAdFailedToLoad: (ad, error) {
           debugPrint('Banner failed: $error');
           ad.dispose();
           _bannerLoaded = false;
+          notifyListeners();
           // Retry après 30s
           Future.delayed(const Duration(seconds: 30), loadBanner);
         },
@@ -39,13 +42,14 @@ class AdService {
     _bannerAd?.dispose();
     _bannerAd = null;
     _bannerLoaded = false;
+    notifyListeners();
   }
 
   // ── Interstitiel ──────────────────────────────────────────
   InterstitialAd? _interstitialAd;
   bool _interstitialReady = false;
   int _interstitialFailCount = 0;
-  static const int _maxRetries = 3;
+  static const int _maxRetries = 10;
 
   void loadInterstitial() {
     InterstitialAd.load(
@@ -104,7 +108,7 @@ class AdService {
   bool _rewardedReady = false;
   int _rewardedFailCount = 0;
 
-  /*void loadRewarded() {
+  void loadRewarded() {
     RewardedAd.load(
       adUnitId: AdConfig.rewarded,
       request: const AdRequest(),
@@ -124,12 +128,14 @@ class AdService {
         },
       ),
     );
-  }*/
+  }
+
+  bool get isRewardedReady => _rewardedReady && _rewardedAd != null;
 
   /// Affiche la pub récompensée.
   /// [onRewarded] appelé si l'utilisateur gagne la récompense.
   /// [onDismissed] appelé dans tous les cas à la fermeture.
-  /*void showRewarded({
+  void showRewarded({
     required void Function(RewardItem reward) onRewarded,
     VoidCallback? onDismissed,
   }) {
@@ -156,11 +162,9 @@ class AdService {
       },
     );
     _rewardedAd!.setImmersiveMode(true);
-    _rewardedAd!.show(
-      onUserEarnedReward: (_, reward) => onRewarded(reward),
-    );
+    _rewardedAd!.show(onUserEarnedReward: (_, reward) => onRewarded(reward));
     _rewardedReady = false;
-  }*/
+  }
 
   // ── App Open ──────────────────────────────────────────────
   AppOpenAd? _appOpenAd;
@@ -182,13 +186,15 @@ class AdService {
         onAdFailedToLoad: (error) {
           debugPrint('AppOpen failed: $error');
           _appOpenReady = false;
+          Future.delayed(const Duration(seconds: 60), loadAppOpen);
         },
       ),
     );
   }
 
   bool get _isAppOpenAdValid {
-    if (!_appOpenReady || _appOpenAd == null || _appOpenLoadTime == null) return false;
+    if (!_appOpenReady || _appOpenAd == null || _appOpenLoadTime == null)
+      return false;
     return DateTime.now().difference(_appOpenLoadTime!) < _appOpenMaxAge;
   }
 
@@ -225,7 +231,7 @@ class AdService {
   void initAll() {
     loadBanner();
     loadInterstitial();
-    //loadRewarded();
+    loadRewarded();
     loadAppOpen();
   }
 

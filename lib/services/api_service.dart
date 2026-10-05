@@ -3,13 +3,12 @@ import 'package:http/http.dart' as http;
 import '../models/prediction_model.dart';
 import '../models/user_model.dart';
 
-// Code custom : user supprimé côté backend
 const int kUserNotFoundCode = 460;
 
 class UserNotFoundException implements Exception {}
 
 class ApiService {
-  static const String _baseUrl = 'https://seddo.innovimpactdev.cloud';
+  static const String _baseUrl = 'https://snv.innovimpactdev.cloud';
 
   /// Crée ou récupère un utilisateur existant via le téléphone
   static Future<UserModel?> createOrGetUser({
@@ -69,4 +68,15 @@ class ApiService {
   /// URL audio WAV
   static String getAudioUrl(int predictionId) =>
       '$_baseUrl/api/horoscope/audio/$predictionId';
+
+  static Future<bool> clearDailyHistory(int userId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$_baseUrl/api/horoscope/history/$userId'),
+      );
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
 }

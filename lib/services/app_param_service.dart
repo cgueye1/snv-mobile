@@ -7,7 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/app_param_model.dart';
 
 class AppParamService {
-  static const String _baseUrl = 'https://seddo.innovimpactdev.cloud';
+  static const String _baseUrl = 'https://snv.innovimpactdev.cloud';
 
   /// Récupère les paramètres depuis l'API
   static Future<AppParamModel?> fetchParams() async {
@@ -33,7 +33,10 @@ class AppParamService {
 
   /// Vérifie si la version actuelle est dans la liste bloquée
   /// Si oui → affiche un dialog de mise à jour obligatoire
-  static Future<void> checkVersion(BuildContext context, AppParamModel params) async {
+  static Future<void> checkVersion(
+    BuildContext context,
+    AppParamModel params,
+  ) async {
     if (params.appVersionList.isEmpty) return;
 
     final info = await PackageInfo.fromPlatform();
@@ -63,11 +66,14 @@ class AppParamService {
         child: AlertDialog(
           backgroundColor: const Color(0xFF0D0D0D),
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20)),
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: const Text(
             '🔮 Mise à jour requise',
             style: TextStyle(
-                color: Color(0xFFD4A017), fontWeight: FontWeight.bold),
+              color: Color(0xFFD4A017),
+              fontWeight: FontWeight.bold,
+            ),
           ),
           content: const Text(
             'Une nouvelle version de Snap Voyance est disponible.\n'
@@ -80,13 +86,14 @@ class AppParamService {
                 onPressed: () async {
                   final uri = Uri.parse(storeLink);
                   if (await canLaunchUrl(uri)) {
-                    await launchUrl(uri,
-                        mode: LaunchMode.externalApplication);
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
                   }
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 24, vertical: 10),
+                    horizontal: 24,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFFD4A017), Color(0xFFB8860B)],
@@ -96,7 +103,9 @@ class AppParamService {
                   child: const Text(
                     'Mettre à jour',
                     style: TextStyle(
-                        color: Colors.black, fontWeight: FontWeight.bold),
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
