@@ -4,7 +4,6 @@ PODS:
   - audioplayers_darwin (0.0.1):
     - Flutter
     - FlutterMacOS
-  - FBAudienceNetwork (6.21.1)
   - Firebase/CoreOnly (12.13.0):
     - FirebaseCore (~> 12.13.0)
   - Firebase/Messaging (12.13.0):
@@ -100,9 +99,6 @@ PODS:
   - GoogleDataTransport (10.1.0):
     - nanopb (~> 3.30910.0)
     - PromisesObjC (~> 2.4)
-  - GoogleMobileAdsMediationFacebook (6.21.1.0):
-    - FBAudienceNetwork (= 6.21.1)
-    - Google-Mobile-Ads-SDK (~> 13.0)
   - GoogleUserMessagingPlatform (3.1.0)
   - GoogleUtilities/AppDelegateSwizzler (8.1.0):
     - GoogleUtilities/Environment
@@ -164,7 +160,6 @@ DEPENDENCIES:
   - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
   - flutter_tts (from `.symlinks/plugins/flutter_tts/ios`)
   - google_mobile_ads (from `.symlinks/plugins/google_mobile_ads/ios`)
-  - GoogleMobileAdsMediationFacebook
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
@@ -174,7 +169,6 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
-    - FBAudienceNetwork
     - Firebase
     - FirebaseAnalytics
     - FirebaseCore
@@ -185,7 +179,6 @@ SPEC REPOS:
     - GoogleAdsOnDeviceConversion
     - GoogleAppMeasurement
     - GoogleDataTransport
-    - GoogleMobileAdsMediationFacebook
     - GoogleUserMessagingPlatform
     - GoogleUtilities
     - nanopb
@@ -226,7 +219,6 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   app_tracking_transparency: 3d84f147f67ca82d3c15355c36b1fa6b66ca7c92
   audioplayers_darwin: 835ced6edd4c9fc8ebb0a7cc9e294a91d99917d5
-  FBAudienceNetwork: 85d18a65c9e35bc426bd4664cf3ae2a1172d7b60
   Firebase: 7d62445aeabdaea36f7d372f33052fed9a72514f
   firebase_analytics: 51adf1f5ff2bf44ebe0ce62e75054c2d5d65a75b
   firebase_core: 0013f886fbd0b4950865551eaab47784424bfdb5
@@ -244,7 +236,6 @@ SPEC CHECKSUMS:
   GoogleAdsOnDeviceConversion: 914d95386d0dd6815e8b1d70c465fe1d13312a1e
   GoogleAppMeasurement: 01e991b4c0c025dd66558dbc5133b5d70ccdf88e
   GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
-  GoogleMobileAdsMediationFacebook: c28fe93a3e6ba02c3a7e09fa9c45682ad9b1e9c6
   GoogleUserMessagingPlatform: befe603da6501006420c206222acd449bba45a9c
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
@@ -256,6 +247,6 @@ SPEC CHECKSUMS:
   url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
   webview_flutter_wkwebview: 8ebf4fded22593026f7dbff1fbff31ea98573c8d
 
-PODFILE CHECKSUM: 96c8ee3573195c94e3468a03451bd69f32a9c03f
+PODFILE CHECKSUM: 23ecbdfb307b17f8d5a8e6662a7ec5907dccf7d2
 
 COCOAPODS: 1.16.2

@@ -46,17 +46,15 @@ class AppParamService {
     debugPrint('🚫 Versions bloquées : ${params.appVersionList}');
 
     if (!params.appVersionList.contains(currentVersion)) {
-      // Version bloquée → forcer mise à jour
-      if (context.mounted) {
+      final storeLink = _storeLinkForCurrentPlatform(params);
+      if (context.mounted && storeLink != null) {
         _showUpdateDialog(context, params);
       }
     }
   }
 
   static void _showUpdateDialog(BuildContext context, AppParamModel params) {
-    final storeLink = Platform.isAndroid
-        ? params.voyanceandroidLink
-        : params.voyanceiosLink;
+    final storeLink = _storeLinkForCurrentPlatform(params);
 
     showDialog(
       context: context,
@@ -81,37 +79,41 @@ class AppParamService {
             style: TextStyle(color: Colors.white70, height: 1.5),
           ),
           actions: [
-            if (storeLink != null && storeLink.isNotEmpty)
-              TextButton(
+            if (storeLink != null)
+              ElevatedButton.icon(
                 onPressed: () async {
                   final uri = Uri.parse(storeLink);
                   if (await canLaunchUrl(uri)) {
                     await launchUrl(uri, mode: LaunchMode.externalApplication);
                   }
                 },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 10,
+                icon: const Icon(Icons.download, color: Colors.black),
+                label: const Text(
+                  'Mettre à jour',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
                   ),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFD4A017), Color(0xFFB8860B)],
-                    ),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Text(
-                    'Mettre à jour',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD4A017),
+                  foregroundColor: Colors.black,
                 ),
               ),
           ],
         ),
       ),
     );
+  }
+
+  static String? _storeLinkForCurrentPlatform(AppParamModel params) {
+    final link = Platform.isAndroid
+        ? params.voyanceandroidLink
+        : Platform.isIOS
+        ? params.voyanceiosLink
+        : null;
+
+    if (link == null || link.trim().isEmpty) return null;
+    return link.trim();
   }
 }

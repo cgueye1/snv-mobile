@@ -25,27 +25,14 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.light,
-  ));
-
-  // 1. Firebase obligatoire en premier
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+    ),
   );
 
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-  // L'app s'affiche immédiatement
   runApp(const SnapVoyanceApp());
-
-  // 3. AdMob + Notifications en arrière-plan
-  Future.wait([
-    MobileAds.instance.initialize().then((_) => adService.initAll()),
-    notificationService.init().then((_) =>
-        notificationService.subscribeToTopic('horoscope_daily')),
-  ]);
 }
 
 class SnapVoyanceApp extends StatefulWidget {
@@ -64,12 +51,23 @@ class _SnapVoyanceAppState extends State<SnapVoyanceApp> {
     _lifecycleObserver = AppLifecycleObserver(adService);
     WidgetsBinding.instance.addObserver(_lifecycleObserver);
 
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initializeServices());
+  }
+
+  Future<void> _initializeServices() async {
     if (Platform.isIOS) {
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        await Future.delayed(const Duration(seconds: 1));
-        await _requestTrackingAuthorization();
-      });
+      await _requestTrackingAuthorization();
     }
+
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+    await MobileAds.instance.initialize();
+    adService.initAll();
+    await notificationService.init();
+    await notificationService.subscribeToTopic('horoscope_daily');
   }
 
   Future<void> _requestTrackingAuthorization() async {
@@ -78,9 +76,8 @@ class _SnapVoyanceAppState extends State<SnapVoyanceApp> {
 
     if (status == TrackingStatus.notDetermined) {
       if (mounted) await _showTrackingDialog();
-      await Future.delayed(const Duration(milliseconds: 300));
       final newStatus =
-      await AppTrackingTransparency.requestTrackingAuthorization();
+          await AppTrackingTransparency.requestTrackingAuthorization();
       debugPrint('✅ ATT new status: $newStatus');
     }
   }
@@ -94,13 +91,16 @@ class _SnapVoyanceAppState extends State<SnapVoyanceApp> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text(
           '🔮 Snap Voyance',
-          style: TextStyle(color: Color(0xFFD4A017), fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Color(0xFFD4A017),
+            fontWeight: FontWeight.bold,
+          ),
         ),
         content: const Text(
           'Pour garder cette app gratuite, nous affichons des publicités.\n\n'
-              'Autoriser le suivi publicitaire nous aide à vous montrer des annonces '
-              'adaptées à vos intérêts. Vous pouvez modifier ce choix à tout moment '
-              'dans les réglages de votre iPhone.',
+          'Autoriser le suivi publicitaire nous aide à vous montrer des annonces '
+          'adaptées à vos intérêts. Vous pouvez modifier ce choix à tout moment '
+          'dans les réglages de votre iPhone.',
           style: TextStyle(color: Colors.white70, height: 1.5),
         ),
         actions: [
@@ -108,7 +108,10 @@ class _SnapVoyanceAppState extends State<SnapVoyanceApp> {
             onPressed: () => Navigator.pop(ctx),
             child: const Text(
               'Continuer',
-              style: TextStyle(color: Color(0xFFD4A017), fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Color(0xFFD4A017),
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -132,9 +135,7 @@ class _SnapVoyanceAppState extends State<SnapVoyanceApp> {
         brightness: Brightness.dark,
         scaffoldBackgroundColor: Colors.black,
       ),
-      navigatorObservers: [
-        FirebaseAnalyticsObserver(analytics: analytics),
-      ],
+      navigatorObservers: [FirebaseAnalyticsObserver(analytics: analytics)],
       home: const TaniScreen(),
     );
   }

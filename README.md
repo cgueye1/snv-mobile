@@ -29,3 +29,6 @@ flutter run -d IP_DU_TELEPHONE:5555
 flutter build apk --release
 
 flutter build appbundle --release
+
+flutter build ipa --release
+open ios/Runner.xcworkspace

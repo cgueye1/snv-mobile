@@ -31,9 +31,6 @@ target 'Runner' do
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 
-  # Adaptateur de médiation Meta Audience Network pour AdMob
-  pod 'GoogleMobileAdsMediationFacebook'
-
   target 'RunnerTests' do
     inherit! :search_paths
   end
